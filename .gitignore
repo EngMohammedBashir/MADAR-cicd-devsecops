@@ -1,0 +1,58 @@
+# 🐍 Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# 🔐 Secrets / credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*
+secrets*
+.aws/
+.aws-sam/
+
+# 🐳 Docker / local artifacts
+*.tar
+*.tar.gz
+*.log
+build/
+dist/
+
+# 🏗️ IaC local state if introduced
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl.backup
+crash.log
+
+# 🗃️ Database / recovery material
+*.dump
+*.backup
+*.sql
+recovered-private/
+legacy-dump/
+
+# 🧪 Test / scanner output
+reports/
+coverage/
+*.sarif.tmp
+
+# 💻 IDE / OS / temp
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+
+# 📸 evidence/ is intentionally NOT ignored.
+# Sanitized portfolio evidence belongs in Git; secrets never do.
