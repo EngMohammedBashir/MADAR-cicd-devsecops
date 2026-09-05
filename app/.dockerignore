@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+*.backup
+*.before-*
+app.py.after-*
+.git/
+.gitignore
+.env
+*.dump
+*.sql
+*.key
+*.pem
