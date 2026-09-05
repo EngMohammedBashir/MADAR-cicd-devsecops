@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+﻿FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -12,6 +12,7 @@ COPY templates ./templates
 COPY static ./static
 
 RUN chown -R madar:madar /app
+
 USER madar
 
 EXPOSE 8080
