@@ -32,7 +32,8 @@ jobs:
         working-directory: app
         env:
           MADAR_DB_PASSWORD: dummy-test-only
-        run: pytest -q
+          PYTHONPATH: .
+        run: python -m pytest -q
 
       - name: Build application image
         run: docker build -t madar-phase06-ci:${{ github.sha }} ./app
