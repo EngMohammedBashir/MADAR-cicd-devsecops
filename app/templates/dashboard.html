@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MADAR Operations</title>
+  <style>
+    body{font-family:system-ui,sans-serif;margin:0;background:#f4f7f9;color:#172433}main{max-width:960px;margin:48px auto;padding:24px}.card{background:#fff;border:1px solid #e4e9ee;border-radius:16px;padding:24px;margin:16px 0}h1{color:#00888f}.status{font-weight:700}code{background:#eef3f5;padding:3px 6px;border-radius:6px}
+  </style>
+</head>
+<body>
+<main>
+  <h1>🚚 MADAR Operations</h1>
+  <p>Phase 06 CI/CD validation surface for the modernized MADAR Flask workload.</p>
+  <section class="card"><h2>Application</h2><p id="health" class="status">Checking <code>/api/health</code>…</p></section>
+  <section class="card"><h2>Database readiness</h2><p id="ready" class="status">Checking <code>/api/ready</code>…</p></section>
+  <section class="card"><h2>Operational summary</h2><pre id="summary">Waiting for database…</pre></section>
+</main>
+<script>
+async function check(path,id){try{const r=await fetch(path);const d=await r.json();document.getElementById(id).textContent=`HTTP ${r.status} — ${JSON.stringify(d)}`;return r.ok}catch(e){document.getElementById(id).textContent=`Unavailable — ${e}`;return false}}
+(async()=>{await check('/api/health','health');const ready=await check('/api/ready','ready');if(ready){try{const r=await fetch('/api/summary');document.getElementById('summary').textContent=JSON.stringify(await r.json(),null,2)}catch(e){document.getElementById('summary').textContent=String(e)}}})();
+</script>
+</body>
+</html>
