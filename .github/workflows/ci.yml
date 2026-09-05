@@ -1,4 +1,4 @@
-name: CI - Build and Health Baseline
+name: CI - Test, Build and Health Baseline
 
 on:
   push:
@@ -10,14 +10,29 @@ permissions:
   contents: read
 
 jobs:
-  docker-baseline:
-    name: Docker Build + Health Check
+  ci:
+    name: Unit Test + Docker Build + Health Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        working-directory: app
+        run: pip install -r requirements-dev.txt
+
+      - name: Run unit tests
+        working-directory: app
+        env:
+          MADAR_DB_PASSWORD: dummy-test-only
+        run: pytest -q
 
       - name: Build application image
         run: docker build -t madar-phase06-ci:${{ github.sha }} ./app
