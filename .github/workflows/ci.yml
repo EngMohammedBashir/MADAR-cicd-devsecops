@@ -14,7 +14,7 @@ jobs:
   ci:
     name: Unit Test + Security + Docker Build + Health Check
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -103,6 +103,62 @@ jobs:
         run: |
           docker tag madar-phase06-ci:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
           docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+
+      - name: Register new ECS task definition revision
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: task-def
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        shell: bash
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition madar-p06-app \
+            --query taskDefinition \
+            --output json > /tmp/current-task-definition.json
+
+          jq --arg IMAGE "${ECR_REGISTRY}/madar-phase06:${IMAGE_TAG}" '
+            del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)
+            | .containerDefinitions[0].image = $IMAGE
+          ' /tmp/current-task-definition.json > /tmp/new-task-definition.json
+
+          TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file:///tmp/new-task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "task_definition_arn=${TASK_DEF_ARN}" >> "$GITHUB_OUTPUT"
+          echo "Registered ${TASK_DEF_ARN}"
+
+      - name: Deploy task definition to ECS service
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          TASK_DEF_ARN: ${{ steps.task-def.outputs.task_definition_arn }}
+        run: |
+          aws ecs update-service \
+            --cluster madar-p06-cluster \
+            --service madar-p06-service \
+            --task-definition "${TASK_DEF_ARN}" \
+            --query 'service.{Service:serviceName,TaskDefinition:taskDefinition,Desired:desiredCount}' \
+            --output table
+
+          aws ecs wait services-stable \
+            --cluster madar-p06-cluster \
+            --services madar-p06-service
+
+      - name: Validate deployed health and database readiness
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          BASE_URL: http://madar-p06-alb-1308264135.us-east-1.elb.amazonaws.com
+        run: |
+          echo "Validating ${BASE_URL}/api/health"
+          curl --fail --show-error --silent "${BASE_URL}/api/health" | tee /tmp/deployed-health.json
+          echo
+          echo "Validating ${BASE_URL}/api/ready"
+          curl --fail --show-error --silent "${BASE_URL}/api/ready" | tee /tmp/deployed-ready.json
+          echo
+          echo "Deployment validation passed."
 
       - name: Clean up test container
         if: always()
