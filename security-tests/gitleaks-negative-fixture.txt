@@ -1,0 +1,5 @@
+# CONTROLLED SECURITY TEST ONLY
+# This is a synthetic Gitleaks fixture, not a real credential.
+# It exists only on the disposable negative-test branch and must never be merged to main.
+
+gitleaks-test = "AKIAIOSFODNN7EXAMPLE"
