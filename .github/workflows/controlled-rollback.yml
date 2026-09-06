@@ -1,0 +1,115 @@
+name: Controlled ECS Rollback Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  rollback-test:
+    name: Controlled Readiness Failure + Rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Configure AWS credentials via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::197821101770:role/MADAR-Phase06-GitHubActionsRole
+          aws-region: us-east-1
+
+      - name: Capture current task definition and create controlled failure revision
+        id: task-def
+        shell: bash
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition madar-p06-app \
+            --query taskDefinition \
+            --output json > /tmp/current-task-definition.json
+
+          PREVIOUS_TASK_DEF_ARN=$(jq -r '.taskDefinitionArn' /tmp/current-task-definition.json)
+          echo "previous_task_definition_arn=${PREVIOUS_TASK_DEF_ARN}" >> "$GITHUB_OUTPUT"
+
+          jq '
+            del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)
+            | (.containerDefinitions[0].environment[] | select(.name == "MADAR_DB_HOST").value) = "controlled-failure.invalid"
+          ' /tmp/current-task-definition.json > /tmp/bad-task-definition.json
+
+          BAD_TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file:///tmp/bad-task-definition.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "bad_task_definition_arn=${BAD_TASK_DEF_ARN}" >> "$GITHUB_OUTPUT"
+          echo "Rollback target: ${PREVIOUS_TASK_DEF_ARN}"
+          echo "Controlled-failure revision: ${BAD_TASK_DEF_ARN}"
+
+      - name: Deploy controlled failure revision
+        env:
+          BAD_TASK_DEF_ARN: ${{ steps.task-def.outputs.bad_task_definition_arn }}
+        shell: bash
+        run: |
+          aws ecs update-service \
+            --cluster madar-p06-cluster \
+            --service madar-p06-service \
+            --task-definition "${BAD_TASK_DEF_ARN}" \
+            --query 'service.{Service:serviceName,TaskDefinition:taskDefinition,Desired:desiredCount}' \
+            --output table
+
+          aws ecs wait services-stable \
+            --cluster madar-p06-cluster \
+            --services madar-p06-service
+
+      - name: Prove health survives but readiness blocks the bad release
+        id: negative-test
+        shell: bash
+        env:
+          BASE_URL: http://madar-p06-alb-1308264135.us-east-1.elb.amazonaws.com
+        run: |
+          echo "Health must remain available:"
+          curl --fail --show-error --silent "${BASE_URL}/api/health"
+          echo
+
+          echo "Readiness must fail because the database host is intentionally invalid:"
+          if curl --fail --show-error --silent "${BASE_URL}/api/ready"; then
+            echo
+            echo "ERROR: readiness unexpectedly passed."
+            exit 1
+          fi
+
+          echo
+          echo "Expected readiness failure detected. Security/release gate worked."
+
+      - name: Roll back to last known-good task definition
+        if: always() && steps.task-def.outputs.previous_task_definition_arn != ''
+        env:
+          PREVIOUS_TASK_DEF_ARN: ${{ steps.task-def.outputs.previous_task_definition_arn }}
+        shell: bash
+        run: |
+          echo "Rolling back to ${PREVIOUS_TASK_DEF_ARN}"
+          aws ecs update-service \
+            --cluster madar-p06-cluster \
+            --service madar-p06-service \
+            --task-definition "${PREVIOUS_TASK_DEF_ARN}" \
+            --query 'service.{Service:serviceName,TaskDefinition:taskDefinition,Desired:desiredCount}' \
+            --output table
+
+          aws ecs wait services-stable \
+            --cluster madar-p06-cluster \
+            --services madar-p06-service
+
+      - name: Validate recovery after rollback
+        if: always() && steps.task-def.outputs.previous_task_definition_arn != ''
+        shell: bash
+        env:
+          BASE_URL: http://madar-p06-alb-1308264135.us-east-1.elb.amazonaws.com
+        run: |
+          echo "Health after rollback:"
+          curl --fail --show-error --silent "${BASE_URL}/api/health"
+          echo
+          echo "Readiness after rollback:"
+          curl --fail --show-error --silent "${BASE_URL}/api/ready"
+          echo
+          echo "Rollback recovery validated successfully."
