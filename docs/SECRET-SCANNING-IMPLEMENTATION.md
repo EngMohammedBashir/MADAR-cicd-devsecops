@@ -1,21 +1,13 @@
-# Secret Scanning Implementation
+# 🔐 Secret Scanning Implementation
 
-Phase 06 uses the official Gitleaks GitHub Action as a blocking CI security gate.
+![Gitleaks](https://img.shields.io/badge/Gitleaks-BLOCKING-16a34a)
 
-## Design
+Gitleaks runs as a blocking CI gate with full repository history available to the scanner. A finding fails the workflow before image publication or deployment.
 
-- Action: `gitleaks/gitleaks-action@v3`
-- Checkout: full Git history (`fetch-depth: 0`)
-- GitHub token: workflow-provided token only; no stored long-lived credential is introduced
-- Failure behavior: blocking; no `continue-on-error`
-- Repository type: personal-account repository, so the action does not require an organization Gitleaks license
+## 🧪 Negative test
 
-The workflow also moves `actions/checkout` to the Node 24 generation (`@v6`) while adding this gate.
+A synthetic, non-production secret fixture was introduced only on PR #5. The run failed exactly as intended and the PR was closed without merge. This proved the gate blocks unsafe changes instead of merely producing advisory output.
 
-## Why this matters
+📸 Evidence: [`../evidence/phase06-secret-gate-negative-test.png`](../evidence/phase06-secret-gate-negative-test.png)
 
-Dependency scanning answers whether third-party packages have known vulnerabilities. Secret scanning answers a different question: whether credentials, tokens, private keys, or similar sensitive values were accidentally committed. Both gates are required before automated cloud delivery is trusted.
-
-## Negative test safety
-
-The negative test must use a synthetic detector fixture only. Never commit a real AWS key, GitHub token, database password, private key, or other usable credential merely to prove the scanner works.
+> No real credential was committed for this validation.

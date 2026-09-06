@@ -1,29 +1,20 @@
-# 🧰 Phase 06 — Execution Runbook
+# ▶️ Phase 06 Execution Runbook
 
-> 🟡 Execution has **not started**. This file becomes the reproducible engineering record as gates are completed.
-
-## Recording format
-
-For each critical command/configuration record:
+## Delivery sequence
 
 ```text
-🎯 Goal
-⌨️ Command/config
-🧠 What it does
-❓ Why it is needed
-✅ Expected result
-🧯 If it fails
-📸 Evidence (only when meaningful)
+PR → required CI/security checks → merge → OIDC → ECR SHA image → ECS task revision → service stability → health → readiness
 ```
 
-## Gate 0 — Preflight
+## Operator checks
 
-See `../checklists/00-preflight.md`.
+1. Confirm the PR required check is green before merge.
+2. Confirm GitHub OIDC receives temporary AWS credentials.
+3. Confirm the ECR tag equals the Git commit SHA.
+4. Wait for ECS service stability.
+5. Validate `/api/health` and `/api/ready` independently.
+6. If readiness fails, do not promote the release; follow the rollback runbook.
 
-## Gate 1+ — Implementation
+## Safety rule
 
-Commands will be added **after they are actually used**. Do not populate this runbook with imaginary successful outputs.
-
-## 🔐 Safety
-
-Never record secret values, AWS access keys, session tokens, passwords or private keys. Use names/ARNs/IDs only when they are safe and useful for reproducibility.
+Never add static AWS credentials to the repository or workflow. Temporary runtime resources are evidence infrastructure, not permanent production assets.

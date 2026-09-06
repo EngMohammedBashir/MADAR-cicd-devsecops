@@ -1,19 +1,18 @@
-# Phase 06 Security Gates
+# 🛡️ Security Gates
 
-## Secret scanning
+| Gate | Protects against | Policy | Result |
+|---|---|---|---:|
+| 🔐 Gitleaks | committed secrets/tokens | blocking | ✅ VALIDATED |
+| 🧪 pytest | application/regression defects | blocking | ✅ VALIDATED |
+| 🛡️ pip-audit | vulnerable Python packages | blocking | ✅ VALIDATED |
+| 🔎 Trivy | HIGH/CRITICAL fixed image vulnerabilities | blocking | ✅ VALIDATED |
+| 🔑 OIDC | long-lived cloud credentials | short-lived STS only | ✅ VALIDATED |
+| 🧱 Branch protection | bypassing CI on `main` | PR + required check | ✅ VALIDATED |
+| 🚦 Readiness | broken dependency after deployment | release validation | ✅ VALIDATED |
+| ↩️ Rollback | failed release recovery | known-good task definition | ✅ VALIDATED |
 
-Phase 06 uses Gitleaks in GitHub Actions to detect committed credentials, API keys, tokens, private keys, and similar secret patterns before later build and deployment stages can proceed.
+## 🎯 Why multiple gates?
 
-The workflow checks out full Git history (`fetch-depth: 0`) so Gitleaks can inspect repository history rather than only the shallow checkout.
+These controls are intentionally independent. A clean dependency audit does not prove there is no secret in the repository; a clean container scan does not prove the application is ready; a successful build does not prove the release can reach its database.
 
-### Failure policy
-
-Secret findings are blocking. The Gitleaks step does not use `continue-on-error`; a finding therefore fails the CI job and prevents subsequent successful completion of the pipeline.
-
-### Controlled negative test
-
-A later dedicated test branch/PR will introduce only a synthetic detector fixture, never a real credential. The expected result is a red Gitleaks gate. The fixture will not be merged to `main` and must not contain a usable AWS, GitHub, database, or other real secret.
-
-### Evidence standard
-
-Record the successful PR workflow run for this change and, separately, the intentionally failed workflow run from the controlled negative test. Do not treat a historical unrelated CI failure as proof that the security gate blocks unsafe changes.
+The pipeline treats security and operability as release conditions, not optional reports.

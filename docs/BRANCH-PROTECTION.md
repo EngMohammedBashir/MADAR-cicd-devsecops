@@ -1,12 +1,19 @@
-# Branch Protection / Ruleset
+# 🛡️ Branch Protection
 
-Desired protection for `main`:
-- require a pull request before merge,
-- require the Phase 06 CI status check,
-- block force pushes,
-- block branch deletion,
-- do not require an external reviewer for this solo portfolio repository.
+![Status](https://img.shields.io/badge/main-PROTECTED-16a34a)
 
-Connector limitation observed on 2026-09-06: the connected GitHub integration can read repository rulesets but does not expose administration write access for branch protection. Repository rulesets currently returned an empty list. Therefore the policy is documented but not falsely claimed as enabled.
+`main` is protected through a GitHub ruleset requiring the pull-request path and the real Phase 06 CI status check. Force pushes and branch deletion are blocked.
 
-Manual GitHub administration is required to activate this policy.
+## ✅ Validated controls
+
+| Control | State |
+|---|---:|
+| Pull request required | ✅ |
+| Required CI status check | ✅ |
+| Force pushes blocked | ✅ |
+| Branch deletion restricted | ✅ |
+| Required approvals | `0` for this solo portfolio repo |
+
+The goal is simple: **code cannot quietly bypass the delivery controls just because the repository has one contributor.**
+
+📸 Evidence: [`../evidence/phase06-branch-protection.png`](../evidence/phase06-branch-protection.png)

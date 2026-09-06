@@ -1,50 +1,28 @@
-# 📸 Phase 06 — Evidence Index
+# 📸 Phase 06 Evidence Index
 
-Evidence records engineering claims; planned work is never presented as validated.
+> Evidence is tied to observed behavior, not planned architecture.
 
-## ✅ Validated milestones
-
-| Milestone | Status | Evidence |
-|---|---|---|
-| PR CI flow | VALIDATED | PR #1 merged after successful CI |
-| Full MADAR application restoration | VALIDATED | PR #2 and successful post-merge CI |
-| Python dependency vulnerability scan | VALIDATED | PR #3; `pip-audit` reported no known vulnerabilities; successful post-merge main run #11 |
-| Secret scanning with Gitleaks | VALIDATED | PR #4 merged after successful CI |
-| Controlled secret-gate negative test | VALIDATED | PR #5 / Actions run #14 intentionally failed on a synthetic fixture; PR closed without merge |
-| Container image vulnerability scan | VALIDATED | PR #6; Trivy HIGH/CRITICAL blocking scan; successful post-merge main run |
-| Health/readiness semantics | VALIDATED | PR #7; tests prove `/api/health` liveness is independent from DB-backed `/api/ready`; successful post-merge main run #22 |
-| Docker build + runtime health baseline | VALIDATED | GitHub Actions main runs build the image, start the container and verify `/api/health` |
-
-## 📷 Screenshot set
-
-| Filename | What it proves |
+| Evidence | What it proves |
 |---|---|
-| `01-phase06-pr-ci-success.png` | Pull-request CI succeeds before merge |
-| `02-phase06-full-app-restored-ci-success.png` | Full MADAR application restored and CI-validated |
-| `03-phase06-dependency-scan-success.png` | `pip-audit` dependency gate succeeds |
-| `04-phase06-secret-scan-success.png` | Clean-repository Gitleaks gate succeeds |
-| `05-phase06-secret-gate-negative-test.png` | Synthetic secret-like fixture is blocked by Gitleaks |
-| `06-phase06-container-scan-success.png` | Trivy container scan passes on the approved image |
-| `07-phase06-readiness-ci-success.png` | Health/readiness tests pass on official `main` |
-| `08-phase06-branch-protection.png` | `main` protection/ruleset requires PR + CI checks |
-
-## 🌈 Future AWS evidence
-
-| Category | What will deserve evidence |
-|---|---|
-| 🔐 OIDC | GitHub assumes the intended AWS role without stored long-lived AWS keys |
-| 🏷️ Traceability | Git SHA ↔ ECR image ↔ deployed revision |
-| 🚀 Deploy | automated ECS deployment succeeds |
-| 🩺 Validation | health/readiness after deployment |
-| 💥 Failure | intentionally bad release is detected |
-| ↩️ Recovery | known-good revision restored |
-| 💰 Cost | cost checkpoint/closeout |
-| 🧹 Cleanup | residual-resource audit |
-
-## 🛡️ Screenshot hygiene
-
-Never capture passwords, secret values, AWS credentials, tokens, private keys or sensitive environment values.
+| [`phase06-pre-aws-closeout-ci-success.png`](phase06-pre-aws-closeout-ci-success.png) | Pre-AWS CI baseline green |
+| [`phase06-branch-protection.png`](phase06-branch-protection.png) | Protected `main` / required workflow path |
+| [`phase06-container-scan-success.png`](phase06-container-scan-success.png) | Trivy blocking image scan passed |
+| [`phase06-readiness-ci-success.png`](phase06-readiness-ci-success.png) | Readiness behavior covered in CI |
+| [`phase06-secret-gate-negative-test.png`](phase06-secret-gate-negative-test.png) | Synthetic secret was blocked |
+| [`phase06-oidc-ecr-publish-success.png`](phase06-oidc-ecr-publish-success.png) | GitHub OIDC authenticated and published to ECR |
+| [`phase06-ecr-sha-traceability.png`](phase06-ecr-sha-traceability.png) | Immutable Git-SHA traceability |
+| [`phase06-required-check-pr9-success.png`](phase06-required-check-pr9-success.png) | Real required check passed on PR |
+| [`phase06-database-restore-and-relock.png`](phase06-database-restore-and-relock.png) | Operational DB restored and returned private |
+| [`phase06-live-dashboard-restored-data.png`](phase06-live-dashboard-restored-data.png) | Live workload served restored Phase 03 data |
+| [`phase06-runtime-validation-summary.png`](phase06-runtime-validation-summary.png) | Runtime validation milestone |
+| [`phase06-automated-ecs-deployment-success.png`](phase06-automated-ecs-deployment-success.png) | Automated ECS deployment succeeded |
+| [`phase06-controlled-failure-rollback-success.png`](phase06-controlled-failure-rollback-success.png) | Failed release detected and rollback recovered |
+| [`phase06-final-cleanup-verification.png`](phase06-final-cleanup-verification.png) | Temporary Phase 06 runtime cleaned |
 
 ## 🧠 Evidence rule
 
-`IMPLEMENTED` means the change exists in code/configuration. `VALIDATED` requires an observed test or workflow result. A screenshot is not decoration: prefer a small set of strong evidence over dozens of repetitive console images.
+`PLANNED` → idea/design  
+`IMPLEMENTED` → code/config exists  
+`VALIDATED` → observed execution proves it
+
+Only the last category is treated as portfolio proof.

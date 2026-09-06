@@ -1,30 +1,17 @@
-# 🏷️ ADR-003 — Git SHA as the Deployable Image Identity
+# ADR-003 — 📦 Immutable Git-SHA image tags
 
-**Status:** 🟡 Proposed
+**Status:** ✅ Accepted and validated
 
-## Problem
+## Decision
+Publish container images to ECR using the source Git commit SHA and enable immutable tags.
 
-A mutable tag such as `latest` alone makes it difficult to prove exactly which source revision produced a running container.
+## Why
+A deployment should answer one question immediately: **which exact source revision produced this running image?** Mutable labels such as `latest` cannot provide that guarantee.
 
-## Proposed decision
+## Consequences
+- ✅ Source → image → task-definition traceability
+- ✅ Rollback targets are deterministic
+- ✅ Accidental tag replacement is blocked
+- ⚠️ Image lifecycle/cleanup must be handled deliberately
 
-Tag the deployable ECR image with the Git commit SHA and carry that identity into deployment evidence.
-
-```text
-commit abc123...
-      ↓
-image :abc123...
-      ↓
-ECS task revision
-      ↓
-release evidence
-```
-
-A friendly alias may be added if useful, but it must not replace the immutable traceability tag.
-
-## Why it matters
-
-- 🔎 auditability,
-- ↩️ deterministic rollback target,
-- 🐛 easier incident correlation,
-- 🧠 clear connection between source, artifact and deployment.
+📸 Evidence: [`../evidence/phase06-ecr-sha-traceability.png`](../evidence/phase06-ecr-sha-traceability.png)

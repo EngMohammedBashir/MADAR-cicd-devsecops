@@ -1,24 +1,22 @@
-# ↩️ Phase 06 — Rollback / Recovery Runbook
+# ↩️ Rollback Runbook
 
-> 🟡 Design skeleton. Exact commands are frozen only after the deployment strategy exists.
+![Status](https://img.shields.io/badge/Rollback-VALIDATED-16a34a)
 
-## 🎯 Goal
+## Trigger
+Rollback when the new ECS revision fails post-deploy validation or a release introduces a dependency failure.
 
-Recover from a deliberately bad release using a known-good immutable artifact/revision and prove service health afterward.
+## Validated procedure
 
-## Required evidence chain
+1. Capture the currently known-good task definition.
+2. Register/deploy the candidate revision.
+3. Wait for ECS stability.
+4. Test liveness and readiness.
+5. On failure, update the service back to the captured known-good revision.
+6. Wait for stability again.
+7. Re-run both endpoint checks.
 
-```text
-Known-good release        ✅ identified
-Bad release               💥 observed safely
-Failure signal            🔎 captured
-Rollback action           ↩️ executed
-Known-good revision       🚀 restored
-/api/health               🩺 healthy
-/api/ready                🩺 healthy
-Deployment stable         ✅ verified
-```
+## Phase 06 proof
 
-## 🛡️ Rule
+The controlled test deployed `madar-p06-app:4` with an invalid DB host. Health stayed up, readiness failed as expected, then the service returned to `madar-p06-app:3` and database readiness recovered.
 
-Do not call rollback "tested" merely because ECS supports rollback or because a command is documented. We must execute the selected path and capture the actual result.
+📸 [`../evidence/phase06-controlled-failure-rollback-success.png`](../evidence/phase06-controlled-failure-rollback-success.png)

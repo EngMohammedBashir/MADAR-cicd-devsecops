@@ -1,63 +1,36 @@
-# ✅ Gate 0 — Phase 06 Preflight
+# ✅ Phase 06 Preflight Checklist
 
-> Do this **before** cost-bearing deployment resources.
+![Gate](https://img.shields.io/badge/Gate%200-PASSED-16a34a)
 
-## ☁️ AWS / Cost
+## 🧾 Account & cost boundary
 
-- [ ] Confirm AWS account/plan still usable without upgrade.
-- [ ] Check remaining promotional credits/time.
-- [ ] Check current month cost baseline.
-- [ ] Confirm region.
-- [ ] Confirm no unintended Phase 05 runtime survived cleanup.
-- [ ] Re-verify intentionally retained AMI/snapshot/S3 before touching them.
+- [x] AWS account verified: `197821101770`
+- [x] Region fixed to `us-east-1`
+- [x] Free Plan/credits checked before runtime creation
+- [x] No account upgrade performed
+- [x] Phase 03 retained artifacts identified before cleanup
 
-## 🔗 Source continuity
+## 🔐 Access & safety
 
-- [ ] Identify exact Phase 05 application source to continue.
-- [ ] Confirm Dockerfile/dependencies/build locally.
-- [ ] Confirm `/api/health` behavior.
-- [ ] Confirm `/api/ready` dependency semantics.
-- [ ] Do not import secrets or machine-specific artifacts.
+- [x] Administrative CLI access validated
+- [x] No long-lived AWS keys added to GitHub
+- [x] GitHub OIDC chosen for AWS authentication
+- [x] Least-privilege deployment permissions scoped to the Phase 06 runtime
+- [x] `main` protected by pull request + required CI check
 
-## 🐙 GitHub
+## 🧪 Delivery prerequisites
 
-- [ ] Repository visibility/settings verified.
-- [ ] GitHub Actions available.
-- [ ] Decide branch/PR strategy.
-- [ ] Check whether desired environment approval/protection features are available.
-- [ ] Decide required checks before merge/deploy.
+- [x] Docker build succeeded locally/in CI
+- [x] `/api/health` behavior validated
+- [x] `/api/ready` failure/success semantics tested
+- [x] Gitleaks, `pip-audit`, Trivy and pytest configured as blocking controls
 
-## 🔐 Authentication / IAM
+## 🧹 Closeout prerequisites
 
-- [ ] Check whether AWS IAM OIDC provider for GitHub already exists before creating another.
-- [ ] Define exact repository/ref/environment trust boundary.
-- [ ] Design least-privilege deployment role.
-- [ ] No long-lived AWS access keys in GitHub.
+- [x] Rollback path tested before teardown
+- [x] Evidence captured
+- [x] Temporary AWS resources removed
+- [x] Residual audit completed in `us-east-1`
+- [x] Phase 03 AMI, snapshot and S3 recovery assets preserved
 
-## 🛡️ DevSecOps gates
-
-- [ ] Select secret scanning method.
-- [ ] Select dependency scan method.
-- [ ] Select container image scan method.
-- [ ] Freeze severity threshold that blocks delivery.
-- [ ] Plan one safe intentional negative test.
-
-## 🚀 Deployment / rollback
-
-- [ ] Decide minimum ECS/Fargate runtime needed.
-- [ ] Decide image tag strategy (`git SHA` baseline).
-- [ ] Decide deployment trigger.
-- [ ] Decide health/readiness post-deploy verification.
-- [ ] Decide rollback/recovery mechanism.
-- [ ] Define proof that rollback actually succeeded.
-
-## 💰 DELETE / RETAIN
-
-- [ ] Build resource inventory before creation.
-- [ ] Mark every resource `DELETE` or `RETAIN`.
-- [ ] Estimate cost drivers.
-- [ ] Define residual audit.
-
-## 🟢 Gate result
-
-Do not mark **GO** until the above decisions are based on live account/repository facts.
+> Gate 0 was not just a starting checklist; it also defined the safety constraints used through cleanup.

@@ -1,69 +1,33 @@
-# 🏗️ Phase 06 — Pipeline Architecture
+# 🏗️ Pipeline Architecture
 
-> 🟡 **Proposed baseline — freeze after preflight.**
-
-## 🌈 Delivery path
-
-```text
-🌿 Feature branch
-      ↓
-🔀 Pull Request
-      ↓
-┌──────────────────────── CI ────────────────────────┐
-│ 🧪 tests / syntax / quality                       │
-│ 🔐 secret scanning                                │
-│ 🧩 dependency security                            │
-│ 🐳 Docker build                                   │
-│ 🔎 container scan                                 │
-└────────────────────────────────────────────────────┘
-      ↓ PASS
-🟢 Merge / approved deployment trigger
-      ↓
-🔐 GitHub OIDC
-      ↓ STS temporary credentials
-☁️ AWS deployment role
-      ↓
-📦 ECR image: <git-sha>
-      ↓
-🚀 ECS service revision
-      ↓
-🩺 ALB /api/health + /api/ready
-      ↓
-   ┌───────────────┐
-   │ healthy?      │
-   └──────┬────────┘
-      YES │ NO
-          │  └──→ 💥 deployment failure → ↩️ rollback/recovery
-          ↓
-      ✅ release evidence
+```mermaid
+flowchart TD
+    PR[🔀 Pull Request] --> GL[🔐 Gitleaks]
+    GL --> PT[🧪 pytest]
+    PT --> PA[🛡️ pip-audit]
+    PA --> DB[🐳 Docker build]
+    DB --> TV[🔎 Trivy]
+    TV --> OIDC[🔑 GitHub OIDC]
+    OIDC --> ECR[📦 ECR · immutable Git SHA]
+    ECR --> ECS[⚙️ ECS/Fargate]
+    ECS --> H[❤️ /api/health]
+    H --> R[🚦 /api/ready]
+    R -->|pass| OK[✅ Release]
+    R -->|fail| RB[↩️ Rollback]
 ```
 
-## 🔐 Trust boundary
+## 🔐 Trust boundaries
 
-GitHub must not receive a permanent AWS access key just to deploy. Preferred design:
+GitHub never stores long-lived AWS access keys. The workflow requests a short-lived STS session through the GitHub OIDC provider. The deployment role can publish only to the Phase 06 ECR repository, update only the Phase 06 ECS service, register task definitions, and pass only the ECS execution role.
+
+## 🌐 Runtime network path
 
 ```text
-GitHub Actions OIDC token
-        ↓
-AWS IAM OIDC provider
-        ↓ trust conditions
-Deployment role
-        ↓ least privilege
-ECR / ECS operations actually required
+Internet → ALB :80 → ECS/Fargate :8080 → PostgreSQL :5432
 ```
 
-The exact trust condition and IAM permissions are frozen only after the repository/account facts are verified.
+Security groups enforced each hop. RDS was returned to `PubliclyAccessible=False` after the one-time restore path was complete.
 
-## 🏷️ Artifact identity
+## 🚦 Operational signals
 
-Primary deployable tag should be tied to the Git commit SHA. Human-friendly aliases may exist, but the evidence must let a reviewer answer:
-
-> Which source commit produced the image that was deployed?
-
-## 💥 Required negative tests
-
-At least one CI/security failure and one deployment/release failure path should be exercised intentionally and safely. The exact test will be selected before execution so we do not damage unrelated resources.
-
-## ↩️ Recovery principle
-
-Rollback is not considered proven because a button or command exists. Phase 06 must execute the selected recovery path and capture the result.
+`/api/health` proves process liveness. `/api/ready` proves the database dependency is usable. The controlled rollback test demonstrated why those signals must remain separate.
