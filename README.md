@@ -9,6 +9,19 @@
 ![AWS](https://img.shields.io/badge/AWS-OIDC%20%2B%20ECS-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)
 ![Security](https://img.shields.io/badge/Security-Gitleaks%20%7C%20pip--audit%20%7C%20Trivy-0f766e?style=for-the-badge)
 
+## 🧭 Start here
+
+| I want to... | Go to |
+|---|---|
+| 👀 Understand the project in 5 minutes | **This README** |
+| 🛠️ Rebuild Phase 06 from the engineering record | [`runbooks/00-execution-runbook.md`](runbooks/00-execution-runbook.md) |
+| ↩️ Recover a failed ECS release | [`runbooks/90-rollback-runbook.md`](runbooks/90-rollback-runbook.md) |
+| 🧹 Tear down the temporary AWS runtime safely | [`runbooks/99-cleanup-runbook.md`](runbooks/99-cleanup-runbook.md) |
+| 🧠 Understand architecture/security decisions | [`decisions/`](decisions/) + [`docs/`](docs/) |
+| 📸 Inspect proof instead of trusting claims | [`evidence/README.md`](evidence/README.md) |
+
+> The README is intentionally the **portfolio landing page**. The runbooks carry the reproducible operator detail, commands, expected results, troubleshooting and cleanup order.
+
 ## 🎯 What I built
 
 Phase 05 proved the MADAR application could run as a container. Phase 06 turned that workload into a **controlled software-delivery system**: every change is tested, scanned, built, traceable to a Git commit, deployed with short-lived AWS credentials, validated after release, and recoverable through rollback.
@@ -28,6 +41,10 @@ flowchart LR
     K -->|Pass| L[✅ Release]
     K -->|Fail| M[↩️ Rollback]
 ```
+
+## 🧰 Technology stack
+
+`GitHub Actions` · `GitHub OIDC` · `AWS IAM/STS` · `Docker` · `Amazon ECR` · `Amazon ECS/Fargate` · `ALB` · `Amazon RDS PostgreSQL` · `Secrets Manager` · `CloudWatch Logs` · `pytest` · `Gitleaks` · `pip-audit` · `Trivy`
 
 ## 🏆 Final result
 
@@ -70,6 +87,12 @@ ECR publish + ECS deployment only
 ```
 
 The pipeline uses four independent blocking controls because each answers a different question: **Gitleaks** protects secrets, **pytest** protects application behavior, **pip-audit** protects Python dependencies, and **Trivy** protects the built container image.
+
+## 🧯 Failure story that matters
+
+The strongest release proof was intentionally negative. I deployed a controlled task-definition revision with an invalid database host. The Flask process stayed alive, so `/api/health` remained healthy, while `/api/ready` correctly failed with HTTP `503`. The gate treated the release as bad, the workflow returned ECS to the known-good revision, and readiness recovered.
+
+That test proved three things at once: **liveness is not readiness**, a green process is not automatically a safe release, and rollback was an exercised recovery path rather than a diagram-only claim.
 
 ## 📸 Evidence gallery
 
@@ -126,6 +149,18 @@ The temporary validation environment used the default VPC in `us-east-1`, an int
 
 The retained Phase 03 recovery baseline remains separate from this phase: the migration AMI, its EBS snapshot, and the operational S3 bucket are preserved for later portfolio work.
 
+## ⚖️ Lab choices vs production direction
+
+| Phase 06 validation lab | Production direction |
+|---|---|
+| HTTP ALB | HTTPS with ACM + DNS |
+| Single-AZ RDS | HA/Multi-AZ according to business RTO/RPO |
+| short-lived default-VPC runtime | dedicated network/environment boundaries |
+| master DB credential for lab continuity | least-privilege application DB principal |
+| one-task validation service | capacity/HA sized to workload requirements |
+
+These are deliberate lab trade-offs, not claims that the temporary topology is the production target.
+
 ## 🧹 Cleanup outcome
 
 After validation I removed the temporary Phase 06 ECS service and cluster, ECR repository, ALB/listener/target group, RDS instance and managed secret, CloudWatch log group, task definitions, IAM roles/policies, OIDC provider, DB subnet group, and Phase 06 security groups. The default VPC/subnets were intentionally preserved because they are account defaults and do not incur charges simply by existing.
@@ -138,7 +173,7 @@ After validation I removed the temporary Phase 06 ECS service and cluster, ECR r
 | `app/` | Flask workload, Docker build and automated tests |
 | `docs/` | Architecture, security controls and implementation record |
 | `decisions/` | Architecture Decision Records |
-| `runbooks/` | Execution, rollback and cleanup procedures |
+| `runbooks/` | **Rebuild, rollback and cleanup operator procedures** |
 | `checklists/` | Preflight and execution guardrails |
 | `evidence/` | Screenshots and evidence index |
 | `CURRENT-STATE.md` | Final authoritative status |
