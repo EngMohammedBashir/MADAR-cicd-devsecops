@@ -1,5 +1,5 @@
 # CONTROLLED SECURITY TEST ONLY
-# This is a synthetic Gitleaks fixture, not a real credential.
-# It exists only on the disposable negative-test branch and must never be merged to main.
+# Synthetic detector fixture. Not a real credential and never valid for any service.
+# This disposable branch must never be merged.
 
-gitleaks-test = "AKIAIOSFODNN7EXAMPLE"
+api_key = "synthetic_test_secret_7Kp9Qx4Vm2Nz8Rw6Yt3Bc5Df1Hg0JsAa"
