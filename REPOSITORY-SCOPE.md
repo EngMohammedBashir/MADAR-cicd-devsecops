@@ -1,40 +1,45 @@
-# 🎯 Repository Scope — MADAR Phase 06
+# 🎯 Repository Scope
 
-## 🟢 In scope
+> **MADAR Phase 06 — CI/CD & DevSecOps**
 
-- 🔀 GitHub pull-request CI and delivery workflow.
-- 🧪 automated application/build validation.
-- 🛡️ secret, dependency and container-image security checks selected during preflight.
-- 🔐 GitHub Actions → AWS authentication with OIDC/short-lived credentials where account capability permits.
-- 🐳 reproducible Docker build.
-- 🏷️ immutable Git-SHA-based image traceability.
-- 📦 Amazon ECR publication.
-- 🚀 automated deployment to an ECS/Fargate validation runtime.
-- 🩺 post-deployment `/api/health` and `/api/ready` checks.
-- 💥 deliberately test a failed/bad delivery path.
-- ↩️ prove rollback/recovery.
-- 📊 capture pipeline and AWS evidence.
-- 💰 cost checkpoint and final cleanup.
-- 🧰 leave enough commands/explanation that another engineer can reproduce the work.
+## ✅ In scope
 
-## 🔴 Not automatically in scope
+This repository owns the software-delivery layer for the MADAR containerized workload:
 
-- ☸️ EKS/Kubernetes migration.
-- 🏢 multi-account landing zone.
-- 🧱 enterprise WAF/SOC platform.
-- 🌍 full production multi-region deployment.
-- 🐘 production Multi-AZ database unless required by a later approved design.
-- 🌐 buying a domain solely for this lab.
-- 💸 permanent NAT infrastructure solely for screenshots.
-- 🧩 microservice rewrite.
+- GitHub pull-request workflow and required checks
+- application/unit/readiness validation
+- secret, dependency and container vulnerability scanning
+- Docker image build
+- GitHub OIDC federation to AWS
+- immutable Git-SHA image publication to ECR
+- automated ECS/Fargate deployment
+- post-deploy health/readiness checks
+- controlled failed-release validation
+- rollback and recovery
+- evidence collection and temporary AWS runtime cleanup
 
-## 🟠 Conditional / decide during preflight
+## 🚫 Intentionally out of scope
 
-- Infrastructure as Code depth for recreating the minimum runtime.
-- GitHub Environments/approval features based on repository/account capability.
-- exact scanners and severity thresholds.
-- deployment strategy: rolling ECS deployment vs another strategy justified by cost/capability.
+- Kubernetes / EKS
+- Terraform-based platform provisioning
+- WAF, custom domain and ACM/TLS
+- long-lived production infrastructure
+- permanent NAT Gateway
+- multi-region disaster recovery
+- organization-wide governance
 
-## 🧠 Scope principle
+Those belong to later MADAR phases rather than being hidden inside Phase 06.
 
-The project should demonstrate **delivery engineering**, not inflate the architecture with unrelated AWS services. Any constraint or unavailable feature will be recorded honestly with the production-grade alternative.
+## 🔗 Continuity
+
+```text
+Phase 03  🏗️ Migration baseline + retained recovery assets
+    ↓
+Phase 05  🐳 Containerized application on ECS/Fargate
+    ↓
+Phase 06  🚀 Secure CI/CD + automated deployment + rollback
+```
+
+## 🧹 Lifecycle rule
+
+The AWS environment created for validation was temporary by design. After the release and rollback tests were proven, the Phase 06 runtime was removed while the Phase 03 recovery baseline remained intact.

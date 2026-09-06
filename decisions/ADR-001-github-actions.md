@@ -1,22 +1,15 @@
-# 🧠 ADR-001 — GitHub Actions as the Delivery Engine
+# ADR-001 — ⚙️ GitHub Actions for CI/CD
 
-**Status:** 🟡 Proposed — validate/freeze at Gate 1
+**Status:** ✅ Accepted and validated
 
-## Context
-
-MADAR's source and portfolio evidence already live in GitHub. Phase 06 needs PR-triggered CI and AWS delivery automation with visible execution evidence.
-
-## Proposed decision
-
-Use **GitHub Actions** as the CI/CD orchestration layer.
+## Decision
+Use GitHub Actions as the Phase 06 delivery engine.
 
 ## Why
+The source already lives in GitHub, so Actions keeps pull requests, required checks, security gates, OIDC identity and deployment history in one auditable workflow. It also provides enough control for a portfolio-scale ECS delivery pipeline without adding another CI platform.
 
-- 🔗 close to source/PR lifecycle,
-- 👀 workflow history is reviewer-visible,
-- 🔐 integrates with GitHub OIDC for AWS,
-- 🧩 sufficient for the learning objectives without adding Jenkins infrastructure merely to operate Jenkins.
-
-## Consequence
-
-The project demonstrates GitHub Actions deeply rather than pretending to cover every CI/CD platform. Jenkins/GitLab concepts remain transferable but are not claimed as implemented.
+## Consequences
+- ✅ Native PR/status-check integration
+- ✅ Direct GitHub OIDC federation to AWS
+- ✅ Reproducible workflow-as-code
+- ⚠️ Workflow permissions and action versions must be reviewed like application code

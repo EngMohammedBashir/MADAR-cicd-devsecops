@@ -1,19 +1,15 @@
-# Gate 4 — Secret Scanning Evidence
+# 🔐 Gate 4 — Secret Scanning Evidence
 
-Status: IMPLEMENTED, pending CI validation on the feature pull request.
+**Status:** ✅ VALIDATED
 
-## Change
+Gitleaks was added as a blocking CI control before build/deploy work. The clean path passed normally. A separate controlled negative test used a synthetic secret-like fixture on PR #5; the workflow failed as intended and the PR was closed without merge.
 
-- Added Gitleaks as a blocking GitHub Actions step.
-- Updated checkout to full history for repository-history scanning.
-- Kept the job at least privilege with `contents: read`.
-- Improved failure log handling so CI does not emit a misleading Docker `No such container` message when failure occurs before container creation.
+## Result
 
-## Validation required
+```text
+Unsafe change → Gitleaks finding → CI failure → merge prevented
+```
 
-1. Feature PR executes the CI workflow.
-2. Gitleaks step succeeds on the legitimate repository state.
-3. Existing pytest, dependency audit, Docker build, container startup, and `/api/health` checks continue to pass.
-4. A separate controlled negative test later proves a synthetic secret fixture causes the gate to fail.
+This demonstrates enforcement, not just scanner installation.
 
-Do not mark the negative-test requirement VALIDATED until that dedicated failing run exists.
+📸 [`phase06-secret-gate-negative-test.png`](phase06-secret-gate-negative-test.png)

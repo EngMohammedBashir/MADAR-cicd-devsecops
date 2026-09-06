@@ -1,52 +1,53 @@
-# 📍 Phase 06 — Current State
+# 📍 CURRENT STATE — Phase 06
 
-> 🟢 **LOCAL / GITHUB DEVSECOPS BASELINE VALIDATED**  
-> **Last synchronized:** 2026-09-06  
-> **AWS delivery resources:** not created yet
+![Status](https://img.shields.io/badge/Status-COMPLETED-16a34a?style=for-the-badge)
+![Cleanup](https://img.shields.io/badge/AWS%20Runtime-CLEANED-2563eb?style=for-the-badge)
 
-## 🚦 Dashboard
+## ✅ Authoritative status
 
-| Area | State |
+Phase 06 is **complete and validated**. The secure delivery path was exercised end-to-end, a controlled failed release was detected by readiness checks, rollback restored the known-good task definition, and the temporary AWS runtime was removed after evidence collection.
+
+| Gate | Outcome |
 |---|---|
-| 🔗 Phase 05 continuity | ✅ CONFIRMED |
-| 📚 Repository foundation | ✅ COMPLETE |
-| 🏗️ Pipeline architecture | ✅ DOCUMENTED |
-| 🔀 Pull-request CI | ✅ VALIDATED |
-| 🧪 Application tests | ✅ VALIDATED |
-| ❤️ `/api/health` liveness semantics | ✅ VALIDATED |
-| 🚦 `/api/ready` database readiness semantics | ✅ VALIDATED |
-| 🔐 Secret scanning — Gitleaks | ✅ VALIDATED |
-| 🧪 Controlled secret-gate negative test | ✅ VALIDATED — intentionally failed and not merged |
-| 🛡️ Python dependency scanning — pip-audit | ✅ VALIDATED |
-| 🐳 Docker build | ✅ VALIDATED |
-| 🔎 Container image scanning — Trivy | ✅ VALIDATED |
-| 🔐 GitHub → AWS OIDC | ⏳ NOT CREATED |
-| 📦 Automated ECR push | ⏳ NOT IMPLEMENTED |
-| 🚀 ECS deployment | ⏳ NOT IMPLEMENTED |
-| 🩺 AWS post-deploy health/readiness | ⏳ NOT TESTED |
-| 💥 Bad-release test | ⏳ NOT TESTED |
-| ↩️ Rollback | ⏳ NOT TESTED |
-| 💰 Cost closeout | ⏳ AFTER AWS VALIDATION |
-| 🧹 AWS cleanup | ⏳ AFTER AWS VALIDATION |
+| 0 · Preflight / cost boundary | ✅ VALIDATED |
+| 1 · Architecture + ADRs | ✅ VALIDATED |
+| 2 · Source/build baseline | ✅ VALIDATED |
+| 3 · Pull-request CI | ✅ VALIDATED |
+| 4 · Security gates | ✅ VALIDATED |
+| 5 · GitHub OIDC / least privilege | ✅ VALIDATED |
+| 6 · Immutable SHA image in ECR | ✅ VALIDATED |
+| 7 · Minimum ECS runtime | ✅ VALIDATED |
+| 8 · Automated deployment | ✅ VALIDATED |
+| 9 · Post-deploy health/readiness | ✅ VALIDATED |
+| 10 · Negative security test | ✅ VALIDATED |
+| 11 · Controlled failed release | ✅ VALIDATED |
+| 12 · Rollback & recovery | ✅ VALIDATED |
+| 13 · Evidence closeout | ✅ VALIDATED |
+| 14 · Cleanup / residual audit | ✅ VALIDATED |
+| 15 · Repository closeout | ✅ COMPLETE |
 
-## ✅ Proven GitHub-side milestones
+## 🔐 Delivery controls
 
-- PR #1 proved the pull-request CI flow.
-- PR #2 restored the full Phase 05 MADAR application into Phase 06 and passed CI.
-- PR #3 added blocking Python dependency vulnerability scanning with `pip-audit` and passed post-merge CI.
-- PR #4 added blocking Gitleaks secret scanning.
-- PR #5 was a controlled synthetic negative test. Gitleaks detected the fixture and failed the workflow as intended; the PR was closed without merge.
-- PR #6 added blocking Trivy HIGH/CRITICAL container-image scanning and passed post-merge CI.
-- PR #7 added automated proof that application liveness and database readiness are separate operational signals; post-merge main CI passed.
+- `main` protected by pull-request workflow and required CI checks.
+- Gitleaks, `pytest`, `pip-audit`, Docker build/runtime validation, and Trivy are blocking controls.
+- GitHub authenticates to AWS through OIDC and short-lived STS credentials.
+- ECR images use immutable Git-SHA tags.
+- Deployment waits for ECS stability, then validates `/api/health` and `/api/ready`.
+- Controlled rollback workflow proved release failure detection and recovery.
 
-## 🔗 Runtime truth
+## ↩️ Failure proof
 
-Phase 05 temporary AWS runtime was intentionally cleaned up. Phase 06 currently has no recreated ECR/ECS/ALB/RDS delivery runtime. Durable continuity comes from the repository and intentionally retained Phase 03 recovery assets.
+The controlled test registered `madar-p06-app:4` with an intentionally invalid database host. `/api/health` remained healthy while `/api/ready` returned the expected failure. The workflow then rolled the service back to `madar-p06-app:3`, after which both liveness and database readiness succeeded.
 
-## 🛑 AWS boundary
+## 🧹 Cleanup state
 
-The next cloud-delivery milestone begins with GitHub OIDC/IAM and then the minimum temporary ECR/ECS runtime. No AWS resource creation should be claimed until that work is actually executed and evidenced.
+Temporary Phase 06 resources were removed: ECS service/cluster, ECR repository, ALB/listener/target group, RDS instance, managed secret, log group, task definitions, Phase 06 IAM roles/policies, OIDC provider, DB subnet group, and Phase 06 security groups.
 
-## 🛡️ Claim rule
+Intentionally retained from Phase 03:
 
-`PLANNED` does not mean `IMPLEMENTED`; `IMPLEMENTED` does not mean `VALIDATED`; `VALIDATED` requires observed execution/evidence.
+- AMI `ami-0cbd2e9ec0d6f9168`
+- Snapshot `snap-0920a020c47fb6447`
+- S3 bucket `madar-operational-files-197821101770`
+- Default VPC/subnets in `us-east-1`
+
+📸 Final proof: [`evidence/phase06-final-cleanup-verification.png`](evidence/phase06-final-cleanup-verification.png)

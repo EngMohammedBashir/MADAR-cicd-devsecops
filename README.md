@@ -1,107 +1,150 @@
 # 🚀 MADAR — CI/CD & DevSecOps
 
-> **Phase 06 of the MADAR Cloud Transformation Journey**  
-> 🟢 **Status: GitHub-side CI/DevSecOps baseline validated; AWS delivery stage not started**
+> **Phase 06 · Secure software delivery for the MADAR containerized workload**  
+> ✅ **Status: COMPLETED & VALIDATED** · 🔐 **OIDC** · 🛡️ **DevSecOps gates** · 🐳 **ECR** · ⚙️ **ECS/Fargate** · ↩️ **Rollback tested** · 🧹 **AWS runtime cleaned**
 
-![Phase](https://img.shields.io/badge/MADAR-Phase%2006-7c3aed)
-![Focus](https://img.shields.io/badge/Focus-CI%2FCD%20%2B%20DevSecOps-2563eb)
-![GitHub Actions](https://img.shields.io/badge/GitHub-Actions-2088ff)
-![Security](https://img.shields.io/badge/Security-Shift--Left-16a34a)
-![AWS](https://img.shields.io/badge/AWS-Delivery%20Pending-f59e0b)
+![Phase](https://img.shields.io/badge/MADAR-Phase%2006-7c3aed?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-COMPLETED-16a34a?style=for-the-badge)
+![CI](https://img.shields.io/badge/GitHub-Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-OIDC%20%2B%20ECS-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)
+![Security](https://img.shields.io/badge/Security-Gitleaks%20%7C%20pip--audit%20%7C%20Trivy-0f766e?style=for-the-badge)
 
-## 🎯 Mission
+## 🎯 What I built
 
-Phase 05 proved the MADAR Flask workload could be containerized and operated on ECS/Fargate. Phase 06 modernizes **how that same application is tested, secured, built and delivered**.
+Phase 05 proved the MADAR application could run as a container. Phase 06 turned that workload into a **controlled software-delivery system**: every change is tested, scanned, built, traceable to a Git commit, deployed with short-lived AWS credentials, validated after release, and recoverable through rollback.
 
-```text
-👨‍💻 Code change
-   ↓
-🔀 Pull Request
-   ↓
-🔐 Gitleaks secret scan
-   ↓
-🧪 pytest application tests
-   ↓
-🛡️ pip-audit dependency scan
-   ↓
-🐳 Docker build
-   ↓
-🔎 Trivy image scan
-   ↓
-❤️ local runtime /api/health check
-   ↓
-[ next stage ] GitHub OIDC → ECR → ECS/Fargate
-   ↓
-🚦 post-deploy /api/health + /api/ready
-   ↓
-✅ Promote OR ↩️ rollback
+```mermaid
+flowchart LR
+    A[👨‍💻 Code] --> B[🔀 Pull Request]
+    B --> C[🔐 Gitleaks]
+    C --> D[🧪 pytest]
+    D --> E[🛡️ pip-audit]
+    E --> F[🐳 Docker Build]
+    F --> G[🔎 Trivy]
+    G --> H[🔑 GitHub OIDC]
+    H --> I[📦 ECR · Git SHA]
+    I --> J[⚙️ ECS/Fargate]
+    J --> K{🚦 health + ready}
+    K -->|Pass| L[✅ Release]
+    K -->|Fail| M[↩️ Rollback]
 ```
 
-## ✅ What is already proven
+## 🏆 Final result
 
-| Capability | Status | Evidence |
-|---|---|---|
-| Pull-request CI | ✅ VALIDATED | PR #1 |
-| Full Phase 05 application restored | ✅ VALIDATED | PR #2 |
-| Python dependency vulnerability scanning | ✅ VALIDATED | PR #3 / `pip-audit` |
-| Secret scanning | ✅ VALIDATED | PR #4 / Gitleaks |
-| Controlled negative security test | ✅ VALIDATED | PR #5 intentionally failed and was closed without merge |
-| Container image vulnerability scanning | ✅ VALIDATED | PR #6 / Trivy HIGH + CRITICAL blocking policy |
-| Liveness semantics | ✅ VALIDATED | `/api/health` tests |
-| Database readiness semantics | ✅ VALIDATED | `/api/ready` success + failure tests in PR #7 |
-| Post-merge readiness CI | ✅ VALIDATED | main Actions run #22 |
-| GitHub → AWS OIDC | ⏳ NOT CREATED | AWS stage pending |
-| ECR publication | ⏳ NOT IMPLEMENTED | AWS stage pending |
-| ECS deployment | ⏳ NOT IMPLEMENTED | AWS stage pending |
-| Release failure / rollback | ⏳ NOT TESTED | AWS stage pending |
+| Capability | Result | Proof |
+|---|---:|---|
+| Pull-request CI | ✅ VALIDATED | Required checks on protected `main` |
+| Unit + readiness tests | ✅ VALIDATED | `/api/health` and `/api/ready` tested independently |
+| Secret scanning | ✅ VALIDATED | Gitleaks blocked a synthetic secret in an unmerged PR |
+| Dependency scanning | ✅ VALIDATED | `pip-audit` blocking gate |
+| Container scanning | ✅ VALIDATED | Trivy HIGH/CRITICAL policy |
+| GitHub → AWS authentication | ✅ VALIDATED | OIDC + short-lived credentials, no long-lived AWS keys |
+| Image traceability | ✅ VALIDATED | Immutable ECR image tags based on Git SHA |
+| Automated ECS deployment | ✅ VALIDATED | Successful GitHub Actions deployment |
+| Post-deploy validation | ✅ VALIDATED | Liveness + database readiness checks |
+| Controlled failed release | ✅ VALIDATED | Bad DB host produced expected readiness failure |
+| Rollback & recovery | ✅ VALIDATED | ECS returned from task definition `:4` to known-good `:3` |
+| Cleanup | ✅ VALIDATED | Temporary Phase 06 AWS runtime removed |
 
-## 🛡️ Security gates
+## ❤️ Liveness vs readiness
 
-The current CI uses independent blocking controls because they answer different questions:
+The dashboard and release checks intentionally use two different signals:
 
-- **Gitleaks** — detects committed credentials, tokens and secret-like material.
-- **pip-audit** — checks Python dependencies against known vulnerabilities.
-- **Trivy** — scans the built container image for HIGH/CRITICAL OS and library vulnerabilities; unfixed findings are ignored by current policy.
-- **pytest** — validates application behavior, including separation of liveness and database readiness.
+- **`/api/health`** → the Flask process is alive and responding.
+- **`/api/ready`** → the application can actually reach PostgreSQL and is ready for real traffic.
 
-A controlled negative test on PR #5 used a synthetic fixture only. Gitleaks failed the run as designed, and the PR was never merged.
+That separation matters during real incidents: an application can be alive while its database dependency is unavailable.
 
-## ❤️ Health vs 🚦 readiness
-
-- `/api/health` answers: **is the application process responding?**
-- `/api/ready` answers: **is the application ready for real traffic with PostgreSQL available?**
-
-The two signals are intentionally independent. An application process may be alive while its database dependency is unavailable.
-
-## 🔗 Continuity from earlier phases
+## 🔐 Security model
 
 ```text
-Phase 03 → migrated the legacy workload and retained recovery artifacts
-Phase 05 → containerized the workload and validated ECS/Fargate behavior
-Phase 06 → secures and automates software delivery for the same workload
+No stored AWS access keys
+        ↓
+GitHub OIDC federation
+        ↓
+Short-lived STS credentials
+        ↓
+Least-privilege GitHub Actions role
+        ↓
+ECR publish + ECS deployment only
 ```
 
-The temporary Phase 05 AWS runtime was cleaned up after validation. Phase 06 therefore does **not** currently claim a running ECR/ECS/ALB/RDS environment.
+The pipeline uses four independent blocking controls because each answers a different question: **Gitleaks** protects secrets, **pytest** protects application behavior, **pip-audit** protects Python dependencies, and **Trivy** protects the built container image.
 
-## 🔐 AWS delivery design
+## 📸 Evidence gallery
 
-The next stage will use GitHub Actions with AWS OIDC and short-lived credentials. Long-lived AWS access keys must not be stored in GitHub or committed to the repository. Images will use immutable Git-SHA traceability before deployment to the minimum temporary ECS/Fargate runtime.
+### 🔑 OIDC → ECR publication
+![OIDC ECR publish](evidence/phase06-oidc-ecr-publish-success.png)
 
-## 📚 Repository map
+### 📦 Immutable Git-SHA image traceability
+![ECR SHA traceability](evidence/phase06-ecr-sha-traceability.png)
 
-- `.github/workflows/` — CI and security gates
-- `app/` — MADAR Flask application, Dockerfile and tests
-- `docs/` — architecture, implementation notes, ADRs and runbooks
-- `checklists/` — execution gates
-- `evidence/` — evidence index and portfolio screenshots
-- `CURRENT-STATE.md` — authoritative implementation status
+### ⚙️ Automated ECS deployment
+![Automated ECS deployment](evidence/phase06-automated-ecs-deployment-success.png)
+
+### 🚚 Live workload with restored operational data
+![Live dashboard](evidence/phase06-live-dashboard-restored-data.png)
+
+### ↩️ Controlled failure and rollback recovery
+![Controlled rollback](evidence/phase06-controlled-failure-rollback-success.png)
+
+### 🧹 Final cleanup verification
+![Final cleanup](evidence/phase06-final-cleanup-verification.png)
+
+<details>
+<summary><strong>🖼️ View the rest of the Phase 06 evidence</strong></summary>
+
+#### 🛡️ Branch protection
+![Branch protection](evidence/phase06-branch-protection.png)
+
+#### 🔎 Container scan
+![Container scan](evidence/phase06-container-scan-success.png)
+
+#### 🗄️ Database restore and relock
+![Database restore](evidence/phase06-database-restore-and-relock.png)
+
+#### ✅ Pre-AWS CI closeout
+![Pre AWS CI](evidence/phase06-pre-aws-closeout-ci-success.png)
+
+#### 🚦 Readiness CI
+![Readiness CI](evidence/phase06-readiness-ci-success.png)
+
+#### ✅ Required PR check
+![Required PR check](evidence/phase06-required-check-pr9-success.png)
+
+#### 📊 Runtime validation summary
+![Runtime validation](evidence/phase06-runtime-validation-summary.png)
+
+#### 🚨 Negative secret-gate test
+![Secret gate negative test](evidence/phase06-secret-gate-negative-test.png)
+
+</details>
+
+## 🧩 AWS runtime used for validation
+
+The temporary validation environment used the default VPC in `us-east-1`, an internet-facing HTTP ALB, ECS/Fargate, ECR, a single-AZ PostgreSQL RDS instance, CloudWatch Logs, scoped security groups, and IAM/OIDC roles. The environment was intentionally short-lived and removed after validation.
+
+The retained Phase 03 recovery baseline remains separate from this phase: the migration AMI, its EBS snapshot, and the operational S3 bucket are preserved for later portfolio work.
+
+## 🧹 Cleanup outcome
+
+After validation I removed the temporary Phase 06 ECS service and cluster, ECR repository, ALB/listener/target group, RDS instance and managed secret, CloudWatch log group, task definitions, IAM roles/policies, OIDC provider, DB subnet group, and Phase 06 security groups. The default VPC/subnets were intentionally preserved because they are account defaults and do not incur charges simply by existing.
+
+## 🗺️ Repository map
+
+| Path | Purpose |
+|---|---|
+| `.github/workflows/` | Production CI/CD and controlled rollback workflows |
+| `app/` | Flask workload, Docker build and automated tests |
+| `docs/` | Architecture, security controls and implementation record |
+| `decisions/` | Architecture Decision Records |
+| `runbooks/` | Execution, rollback and cleanup procedures |
+| `checklists/` | Preflight and execution guardrails |
+| `evidence/` | Screenshots and evidence index |
+| `CURRENT-STATE.md` | Final authoritative status |
 
 ## 🧠 Evidence standard
 
-Claims follow a strict rule:
+> **PLANNED** = design only · **IMPLEMENTED** = code/configuration exists · **VALIDATED** = observed execution proves the behavior.
 
-`PLANNED` → design only  
-`IMPLEMENTED` → code/config exists  
-`VALIDATED` → observed execution proves the behavior
-
-No AWS deployment, rollback, resilience or cost claim is marked validated until the corresponding AWS work is actually executed and evidenced.
+Phase 06 is closed only because the delivery path, security gates, failure behavior, recovery path, and cleanup were all observed and documented.

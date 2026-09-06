@@ -1,37 +1,24 @@
-# 🧭 START HERE — Phase 06
+# 🧭 START HERE
 
-> If I reopen this project tomorrow—or another engineer opens it months later—start here.
+![Phase](https://img.shields.io/badge/MADAR-Phase%2006-7c3aed)
+![Status](https://img.shields.io/badge/Status-COMPLETED-16a34a)
 
-## 📍 Where we are
+This repository documents how I moved MADAR from a containerized application to a **secured, automated and recoverable delivery pipeline**.
 
-Phase 05 is closed. Phase 06 repository documentation is initialized, but **no CI/CD or AWS deployment implementation is claimed yet**.
+## ⚡ Fast tour
 
-## ▶️ First session
+1. **[`README.md`](README.md)** — portfolio overview, architecture and screenshots.
+2. **[`CURRENT-STATE.md`](CURRENT-STATE.md)** — authoritative final status.
+3. **[`docs/PIPELINE-ARCHITECTURE.md`](docs/PIPELINE-ARCHITECTURE.md)** — delivery architecture and trust boundaries.
+4. **[`docs/SECURITY-GATES.md`](docs/SECURITY-GATES.md)** — blocking security controls.
+5. **[`decisions/`](decisions/)** — why GitHub Actions, OIDC and immutable tags were chosen.
+6. **[`runbooks/`](runbooks/)** — execution, rollback and cleanup operations.
+7. **[`evidence/README.md`](evidence/README.md)** — indexed proof from the actual implementation.
 
-1. Read `CURRENT-STATE.md`.
-2. Read `REPOSITORY-SCOPE.md`.
-3. Execute `checklists/00-preflight.md`.
-4. Review `docs/PIPELINE-ARCHITECTURE.md`.
-5. Review ADRs before creating IAM/OIDC resources.
-6. Freeze DELETE vs RETAIN inventory and expected cost.
-7. Update `CURRENT-STATE.md` after every meaningful gate.
-
-## 🧠 How to work
-
-For every important command, record:
+## 🧠 Mental model
 
 ```text
-Command → what it does → why we need it → expected result → what failure means
+Code → PR → Test/Scan → Build → OIDC → ECR → ECS → Validate → Release / Rollback → Cleanup
 ```
 
-For every major discovery:
-
-```text
-Where did I learn it? → what does it mean? → why does it matter?
-```
-
-Do not paste secrets into terminals/screenshots/docs. Do not use long-lived AWS access keys in GitHub when OIDC can satisfy the requirement.
-
-## 📸 Evidence rule
-
-Capture evidence only when it proves a reviewer-relevant claim: CI gate, security block, OIDC assumption, ECR artifact traceability, deployment, health, failed release, rollback/recovery, observability, cost or cleanup.
+The project is intentionally evidence-driven: design alone is not marked as validated. The repository records what was actually executed and observed.
