@@ -1,16 +1,29 @@
 # 📸 Phase 06 — Evidence Index
 
-> 🟡 No implementation screenshots are claimed yet.
+Evidence records engineering claims; planned work is never presented as validated.
 
-## 🌈 Evidence categories
+## ✅ Validated milestones
+
+| Milestone | Status | Evidence |
+|---|---|---|
+| PR CI flow | VALIDATED | PR #1 merged after successful CI |
+| Full MADAR application restoration | VALIDATED | PR #2 and successful post-merge CI |
+| Python dependency vulnerability scan | VALIDATED | PR #3; `pip-audit` reported no known vulnerabilities; successful post-merge main run #11 |
+| Docker build + process health baseline | VALIDATED | GitHub Actions main runs; `/api/health` returns application status |
+
+## 🛡️ Gate 4 in progress
+
+| Milestone | Status | Evidence |
+|---|---|---|
+| Secret scanning with Gitleaks | IMPLEMENTED / PENDING VALIDATION | `phase06-gate4-secret-scanning.md`; feature PR CI required |
+| Controlled secret-scan negative test | PLANNED | Synthetic non-credential fixture on a non-main test branch/PR |
+| Container image vulnerability scan | PLANNED | Not yet implemented |
+
+## 🌈 Future evidence categories
 
 | Category | What will deserve evidence |
 |---|---|
-| 🔀 PR / CI | required validation actually runs |
-| 🧪 Tests | passing baseline + intentional failing test |
-| 🛡️ Security | a meaningful security gate blocks the agreed negative case |
-| 🔐 OIDC | GitHub successfully assumes the intended AWS role without stored long-lived AWS keys |
-| 🐳 Build | reproducible image build |
+| 🔐 OIDC | GitHub assumes the intended AWS role without stored long-lived AWS keys |
 | 🏷️ Traceability | Git SHA ↔ ECR image ↔ deployed revision |
 | 🚀 Deploy | automated ECS deployment succeeds |
 | 🩺 Validation | health/readiness after deployment |
@@ -25,4 +38,4 @@ Never capture passwords, secret values, AWS credentials, tokens, private keys or
 
 ## 🧠 Evidence rule
 
-A screenshot is not decoration. It must prove a specific engineering claim. Prefer a small set of strong evidence over dozens of repetitive console images.
+`IMPLEMENTED` means the change exists in code/configuration. `VALIDATED` requires an observed test or workflow result. A screenshot is not decoration: prefer a small set of strong evidence over dozens of repetitive console images.
