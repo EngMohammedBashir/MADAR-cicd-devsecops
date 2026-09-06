@@ -1462,16 +1462,6 @@ async function fetchCustomers() {
 
 async function fetchHealth() {
 
-  const response =
-    await fetch(
-      "/api/health"
-    );
-
-
-  const data =
-    await response.json();
-
-
   const appStatus =
     document.getElementById(
       "applicationStatus"
@@ -1484,34 +1474,58 @@ async function fetchHealth() {
     );
 
 
-  if (
-    response.ok
-  ) {
+  try {
+
+    const healthResponse =
+      await fetch(
+        "/api/health"
+      );
+
 
     appStatus.textContent =
-      "Application responding";
+      healthResponse.ok
+        ? "Application responding"
+        : "Application degraded";
 
     appStatus.className =
-      "status-good";
-
-
-    dbStatus.textContent =
-      "Database connected";
-
-    dbStatus.className =
-      "status-good";
+      healthResponse.ok
+        ? "status-good"
+        : "status-bad";
 
   }
 
-
-  else {
+  catch (error) {
 
     appStatus.textContent =
-      "Application degraded";
+      "Application unavailable";
 
     appStatus.className =
       "status-bad";
 
+  }
+
+
+  try {
+
+    const readyResponse =
+      await fetch(
+        "/api/ready"
+      );
+
+
+    dbStatus.textContent =
+      readyResponse.ok
+        ? "Database connected"
+        : "Database unavailable";
+
+    dbStatus.className =
+      readyResponse.ok
+        ? "status-good"
+        : "status-bad";
+
+  }
+
+  catch (error) {
 
     dbStatus.textContent =
       "Database unavailable";
