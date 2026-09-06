@@ -2,9 +2,9 @@ name: CI - Test, Build and Health Baseline
 
 on:
   push:
-    branches: [main]
+    branches: [main, test/negative-secret-gate]
   pull_request:
-    branches: [main]
+    branches: [main, test/negative-secret-gate]
 
 permissions:
   contents: read
@@ -88,3 +88,4 @@ jobs:
           if docker container inspect madar-p06-ci >/dev/null 2>&1; then
             docker rm -f madar-p06-ci
           fi
+
