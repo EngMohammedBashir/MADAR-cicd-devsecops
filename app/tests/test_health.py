@@ -51,3 +51,16 @@ def test_ready_returns_200_when_database_query_succeeds():
     }
     cursor.execute.assert_called_once_with("SELECT 1;")
     connection.close.assert_called_once_with()
+
+
+def test_dashboard_wires_application_health_and_database_readiness_separately():
+    client = app.test_client()
+
+    response = client.get("/")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert '"/api/health"' in html
+    assert '"/api/ready"' in html
+    assert 'id="applicationStatus"' in html
+    assert 'id="databaseStatus"' in html

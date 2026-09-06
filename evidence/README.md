@@ -9,17 +9,26 @@ Evidence records engineering claims; planned work is never presented as validate
 | PR CI flow | VALIDATED | PR #1 merged after successful CI |
 | Full MADAR application restoration | VALIDATED | PR #2 and successful post-merge CI |
 | Python dependency vulnerability scan | VALIDATED | PR #3; `pip-audit` reported no known vulnerabilities; successful post-merge main run #11 |
-| Docker build + process health baseline | VALIDATED | GitHub Actions main runs; `/api/health` returns application status |
+| Secret scanning with Gitleaks | VALIDATED | PR #4 merged after successful CI |
+| Controlled secret-gate negative test | VALIDATED | PR #5 / Actions run #14 intentionally failed on a synthetic fixture; PR closed without merge |
+| Container image vulnerability scan | VALIDATED | PR #6; Trivy HIGH/CRITICAL blocking scan; successful post-merge main run |
+| Health/readiness semantics | VALIDATED | PR #7; tests prove `/api/health` liveness is independent from DB-backed `/api/ready`; successful post-merge main run #22 |
+| Docker build + runtime health baseline | VALIDATED | GitHub Actions main runs build the image, start the container and verify `/api/health` |
 
-## 🛡️ Gate 4 in progress
+## 📷 Screenshot set
 
-| Milestone | Status | Evidence |
-|---|---|---|
-| Secret scanning with Gitleaks | IMPLEMENTED / PENDING VALIDATION | `phase06-gate4-secret-scanning.md`; feature PR CI required |
-| Controlled secret-scan negative test | PLANNED | Synthetic non-credential fixture on a non-main test branch/PR |
-| Container image vulnerability scan | PLANNED | Not yet implemented |
+| Filename | What it proves |
+|---|---|
+| `01-phase06-pr-ci-success.png` | Pull-request CI succeeds before merge |
+| `02-phase06-full-app-restored-ci-success.png` | Full MADAR application restored and CI-validated |
+| `03-phase06-dependency-scan-success.png` | `pip-audit` dependency gate succeeds |
+| `04-phase06-secret-scan-success.png` | Clean-repository Gitleaks gate succeeds |
+| `05-phase06-secret-gate-negative-test.png` | Synthetic secret-like fixture is blocked by Gitleaks |
+| `06-phase06-container-scan-success.png` | Trivy container scan passes on the approved image |
+| `07-phase06-readiness-ci-success.png` | Health/readiness tests pass on official `main` |
+| `08-phase06-branch-protection.png` | `main` protection/ruleset requires PR + CI checks |
 
-## 🌈 Future evidence categories
+## 🌈 Future AWS evidence
 
 | Category | What will deserve evidence |
 |---|---|
