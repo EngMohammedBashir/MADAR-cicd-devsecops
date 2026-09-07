@@ -1,30 +1,43 @@
 # 🚀 MADAR — CI/CD & DevSecOps
 
-> **Phase 06 · Secure software delivery for the MADAR containerized workload**  
-> ✅ **Status: COMPLETED & VALIDATED** · 🔐 **OIDC** · 🛡️ **DevSecOps gates** · 🐳 **ECR** · ⚙️ **ECS/Fargate** · ↩️ **Rollback tested** · 🧹 **AWS runtime cleaned**
+<p align="center">
+  <img src="https://img.shields.io/badge/MADAR-PHASE%2006-7C3AED?style=for-the-badge" alt="MADAR Phase 06" />
+  <img src="https://img.shields.io/badge/STATUS-COMPLETED-16A34A?style=for-the-badge" alt="Completed" />
+  <img src="https://img.shields.io/badge/SECURITY-VALIDATED-0F766E?style=for-the-badge" alt="Security Validated" />
+  <img src="https://img.shields.io/badge/ROLLBACK-TESTED-DC2626?style=for-the-badge" alt="Rollback Tested" />
+</p>
 
-![Phase](https://img.shields.io/badge/MADAR-Phase%2006-7c3aed?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-COMPLETED-16a34a?style=for-the-badge)
-![CI](https://img.shields.io/badge/GitHub-Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
-![AWS](https://img.shields.io/badge/AWS-OIDC%20%2B%20ECS-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)
-![Security](https://img.shields.io/badge/Security-Gitleaks%20%7C%20pip--audit%20%7C%20Trivy-0f766e?style=for-the-badge)
+<p align="center">
+  <img src="https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2088FF?style=flat-square&logo=githubactions&logoColor=white" />
+  <img src="https://img.shields.io/badge/AWS-OIDC-FF9900?style=flat-square&logo=amazonwebservices&logoColor=white" />
+  <img src="https://img.shields.io/badge/Amazon-ECS_Fargate-FF9900?style=flat-square&logo=amazonecs&logoColor=white" />
+  <img src="https://img.shields.io/badge/Docker-Container-2496ED?style=flat-square&logo=docker&logoColor=white" />
+  <img src="https://img.shields.io/badge/PostgreSQL-RDS-4169E1?style=flat-square&logo=postgresql&logoColor=white" />
+</p>
 
-## 🧭 Start here
+> [!NOTE]
+> **Phase 06 is completed, validated, and cleaned.** This repository records the delivery pipeline I built, the security gates I proved, the controlled failure I triggered, the rollback I exercised, and the final AWS cleanup.
 
-| I want to... | Go to |
-|---|---|
-| 👀 Understand the project in 5 minutes | **This README** |
-| 🛠️ Rebuild Phase 06 from the engineering record | [`runbooks/00-execution-runbook.md`](runbooks/00-execution-runbook.md) |
-| ↩️ Recover a failed ECS release | [`runbooks/90-rollback-runbook.md`](runbooks/90-rollback-runbook.md) |
-| 🧹 Tear down the temporary AWS runtime safely | [`runbooks/99-cleanup-runbook.md`](runbooks/99-cleanup-runbook.md) |
-| 🧠 Understand architecture/security decisions | [`decisions/`](decisions/) + [`docs/`](docs/) |
-| 📸 Inspect proof instead of trusting claims | [`evidence/README.md`](evidence/README.md) |
+## 🧭 Choose your path
 
-> The README is intentionally the **portfolio landing page**. The runbooks carry the reproducible operator detail, commands, expected results, troubleshooting and cleanup order.
+| | Goal | Start here |
+|---|---|---|
+| 👀 | **Understand the project in 5 minutes** | Keep reading this README |
+| 🛠️ | **Rebuild Phase 06 from zero** | [`runbooks/00-execution-runbook.md`](runbooks/00-execution-runbook.md) |
+| ↩️ | **Recover a failed ECS release** | [`runbooks/90-rollback-runbook.md`](runbooks/90-rollback-runbook.md) |
+| 🧹 | **Destroy the temporary runtime safely** | [`runbooks/99-cleanup-runbook.md`](runbooks/99-cleanup-runbook.md) |
+| 🧠 | **Understand the engineering decisions** | [`decisions/`](decisions/) + [`docs/`](docs/) |
+| 📸 | **Inspect the proof** | [`evidence/README.md`](evidence/README.md) |
 
-## 🎯 What I built
+```text
+README = understand  →  ADRs/docs = understand why  →  Runbooks = rebuild / recover / clean
+```
 
-Phase 05 proved the MADAR application could run as a container. Phase 06 turned that workload into a **controlled software-delivery system**: every change is tested, scanned, built, traceable to a Git commit, deployed with short-lived AWS credentials, validated after release, and recoverable through rollback.
+## 🎯 Mission
+
+Phase 05 proved that MADAR's legacy workload could run as a container. Phase 06 turned that container into a **controlled software-delivery system**: every change is tested and scanned, every published image maps to a Git commit, AWS authentication uses short-lived credentials, releases are validated after deployment, and failed releases have an exercised recovery path.
+
+## 🌈 Delivery journey
 
 ```mermaid
 flowchart LR
@@ -38,148 +51,178 @@ flowchart LR
     H --> I[📦 ECR · Git SHA]
     I --> J[⚙️ ECS/Fargate]
     J --> K{🚦 health + ready}
-    K -->|Pass| L[✅ Release]
-    K -->|Fail| M[↩️ Rollback]
+    K -->|PASS| L[✅ RELEASE]
+    K -->|FAIL| M[↩️ ROLLBACK]
+    M --> J
+
+    classDef source fill:#dbeafe,stroke:#2563eb,color:#111827;
+    classDef security fill:#fef3c7,stroke:#d97706,color:#111827;
+    classDef aws fill:#ffedd5,stroke:#ea580c,color:#111827;
+    classDef success fill:#dcfce7,stroke:#16a34a,color:#111827;
+    classDef failure fill:#fee2e2,stroke:#dc2626,color:#111827;
+    class A,B source;
+    class C,D,E,F,G security;
+    class H,I,J,K aws;
+    class L success;
+    class M failure;
 ```
 
-## 🧰 Technology stack
+## 🏆 Final scorecard
 
-`GitHub Actions` · `GitHub OIDC` · `AWS IAM/STS` · `Docker` · `Amazon ECR` · `Amazon ECS/Fargate` · `ALB` · `Amazon RDS PostgreSQL` · `Secrets Manager` · `CloudWatch Logs` · `pytest` · `Gitleaks` · `pip-audit` · `Trivy`
+| Gate | Capability | Result |
+|---|---|---:|
+| 🔀 | Protected PR delivery | 🟢 **VALIDATED** |
+| 🧪 | Unit + readiness tests | 🟢 **VALIDATED** |
+| 🔐 | Gitleaks secret scanning | 🟢 **VALIDATED** |
+| 🛡️ | `pip-audit` dependency gate | 🟢 **VALIDATED** |
+| 🔎 | Trivy HIGH/CRITICAL image gate | 🟢 **VALIDATED** |
+| 🔑 | GitHub → AWS OIDC | 🟢 **VALIDATED** |
+| 📦 | Immutable Git-SHA ECR images | 🟢 **VALIDATED** |
+| ⚙️ | Automated ECS deployment | 🟢 **VALIDATED** |
+| 🚦 | Health + readiness validation | 🟢 **VALIDATED** |
+| 🚨 | Controlled failed release | 🟢 **VALIDATED** |
+| ↩️ | Rollback + recovery | 🟢 **VALIDATED** |
+| 🧹 | Runtime cleanup | 🟢 **VALIDATED** |
 
-## 🏆 Final result
+## ❤️ Liveness ≠ Readiness
 
-| Capability | Result | Proof |
-|---|---:|---|
-| Pull-request CI | ✅ VALIDATED | Required checks on protected `main` |
-| Unit + readiness tests | ✅ VALIDATED | `/api/health` and `/api/ready` tested independently |
-| Secret scanning | ✅ VALIDATED | Gitleaks blocked a synthetic secret in an unmerged PR |
-| Dependency scanning | ✅ VALIDATED | `pip-audit` blocking gate |
-| Container scanning | ✅ VALIDATED | Trivy HIGH/CRITICAL policy |
-| GitHub → AWS authentication | ✅ VALIDATED | OIDC + short-lived credentials, no long-lived AWS keys |
-| Image traceability | ✅ VALIDATED | Immutable ECR image tags based on Git SHA |
-| Automated ECS deployment | ✅ VALIDATED | Successful GitHub Actions deployment |
-| Post-deploy validation | ✅ VALIDATED | Liveness + database readiness checks |
-| Controlled failed release | ✅ VALIDATED | Bad DB host produced expected readiness failure |
-| Rollback & recovery | ✅ VALIDATED | ECS returned from task definition `:4` to known-good `:3` |
-| Cleanup | ✅ VALIDATED | Temporary Phase 06 AWS runtime removed |
+| Signal | Question answered | Healthy result |
+|---|---|---|
+| ❤️ `/api/health` | Is the Flask process alive? | `HTTP 200` |
+| 💚 `/api/ready` | Can the app reach PostgreSQL and serve real traffic? | `HTTP 200` + database connected |
 
-## ❤️ Liveness vs readiness
-
-The dashboard and release checks intentionally use two different signals:
-
-- **`/api/health`** → the Flask process is alive and responding.
-- **`/api/ready`** → the application can actually reach PostgreSQL and is ready for real traffic.
-
-That separation matters during real incidents: an application can be alive while its database dependency is unavailable.
+> [!IMPORTANT]
+> A process can be **alive** while its database dependency is unavailable. Phase 06 deliberately proved that distinction during the rollback test.
 
 ## 🔐 Security model
 
-```text
-No stored AWS access keys
-        ↓
-GitHub OIDC federation
-        ↓
-Short-lived STS credentials
-        ↓
-Least-privilege GitHub Actions role
-        ↓
-ECR publish + ECS deployment only
+```mermaid
+flowchart TD
+    A[🚫 No stored AWS access keys] --> B[🔑 GitHub OIDC federation]
+    B --> C[⏱️ Short-lived STS credentials]
+    C --> D[🛡️ Least-privilege deployment role]
+    D --> E[📦 ECR publish]
+    D --> F[⚙️ ECS deployment]
+
+    classDef safe fill:#dcfce7,stroke:#16a34a,color:#111827;
+    classDef auth fill:#dbeafe,stroke:#2563eb,color:#111827;
+    class A safe;
+    class B,C,D auth;
 ```
 
-The pipeline uses four independent blocking controls because each answers a different question: **Gitleaks** protects secrets, **pytest** protects application behavior, **pip-audit** protects Python dependencies, and **Trivy** protects the built container image.
+| Control | Protects against |
+|---|---|
+| 🔐 **Gitleaks** | committed secrets |
+| 🧪 **pytest** | broken application behavior |
+| 🛡️ **pip-audit** | vulnerable Python dependencies |
+| 🔎 **Trivy** | HIGH/CRITICAL container vulnerabilities |
+| 🔑 **OIDC** | long-lived AWS credentials in GitHub |
 
-## 🧯 Failure story that matters
+## 🧯 The failure story
 
-The strongest release proof was intentionally negative. I deployed a controlled task-definition revision with an invalid database host. The Flask process stayed alive, so `/api/health` remained healthy, while `/api/ready` correctly failed with HTTP `503`. The gate treated the release as bad, the workflow returned ECS to the known-good revision, and readiness recovered.
+```text
+🟢 known-good :3
+      ↓
+🔴 controlled bad revision :4
+      ↓
+❤️ /api/health = 200
+💔 /api/ready  = 503
+      ↓
+🚨 release gate detects failure
+      ↓
+↩️ rollback to :3
+      ↓
+💚 /api/ready = 200 · database connected
+```
 
-That test proved three things at once: **liveness is not readiness**, a green process is not automatically a safe release, and rollback was an exercised recovery path rather than a diagram-only claim.
+I intentionally deployed a task-definition revision with an invalid database host. Flask remained alive, but readiness failed exactly as designed. The release was rejected and ECS returned to the known-good revision. This made rollback an **observed recovery path**, not a diagram-only claim.
 
 ## 📸 Evidence gallery
 
-### 🔑 OIDC → ECR publication
-![OIDC ECR publish](evidence/phase06-oidc-ecr-publish-success.png)
+| 🔑 OIDC → ECR | 📦 Git-SHA traceability |
+|---|---|
+| ![OIDC ECR publish](evidence/phase06-oidc-ecr-publish-success.png) | ![ECR SHA traceability](evidence/phase06-ecr-sha-traceability.png) |
 
-### 📦 Immutable Git-SHA image traceability
-![ECR SHA traceability](evidence/phase06-ecr-sha-traceability.png)
+| ⚙️ Automated deployment | 🚚 Restored live data |
+|---|---|
+| ![Automated ECS deployment](evidence/phase06-automated-ecs-deployment-success.png) | ![Live dashboard](evidence/phase06-live-dashboard-restored-data.png) |
 
-### ⚙️ Automated ECS deployment
-![Automated ECS deployment](evidence/phase06-automated-ecs-deployment-success.png)
-
-### 🚚 Live workload with restored operational data
-![Live dashboard](evidence/phase06-live-dashboard-restored-data.png)
-
-### ↩️ Controlled failure and rollback recovery
-![Controlled rollback](evidence/phase06-controlled-failure-rollback-success.png)
-
-### 🧹 Final cleanup verification
-![Final cleanup](evidence/phase06-final-cleanup-verification.png)
+| ↩️ Controlled rollback | 🧹 Final cleanup |
+|---|---|
+| ![Controlled rollback](evidence/phase06-controlled-failure-rollback-success.png) | ![Final cleanup](evidence/phase06-final-cleanup-verification.png) |
 
 <details>
-<summary><strong>🖼️ View the rest of the Phase 06 evidence</strong></summary>
+<summary><strong>🖼️ Open the rest of the evidence gallery</strong></summary>
 
-#### 🛡️ Branch protection
+### 🛡️ Branch protection
 ![Branch protection](evidence/phase06-branch-protection.png)
 
-#### 🔎 Container scan
+### 🔎 Container scan
 ![Container scan](evidence/phase06-container-scan-success.png)
 
-#### 🗄️ Database restore and relock
+### 🗄️ Database restore + relock
 ![Database restore](evidence/phase06-database-restore-and-relock.png)
 
-#### ✅ Pre-AWS CI closeout
+### ✅ Pre-AWS CI closeout
 ![Pre AWS CI](evidence/phase06-pre-aws-closeout-ci-success.png)
 
-#### 🚦 Readiness CI
+### 🚦 Readiness CI
 ![Readiness CI](evidence/phase06-readiness-ci-success.png)
 
-#### ✅ Required PR check
-![Required PR check](evidence/phase06-required-check-pr9-success.png)
-
-#### 📊 Runtime validation summary
-![Runtime validation](evidence/phase06-runtime-validation-summary.png)
-
-#### 🚨 Negative secret-gate test
+### 🚨 Negative secret-gate test
 ![Secret gate negative test](evidence/phase06-secret-gate-negative-test.png)
 
 </details>
 
-## 🧩 AWS runtime used for validation
+## 🧩 Validated AWS runtime
 
-The temporary validation environment used the default VPC in `us-east-1`, an internet-facing HTTP ALB, ECS/Fargate, ECR, a single-AZ PostgreSQL RDS instance, CloudWatch Logs, scoped security groups, and IAM/OIDC roles. The environment was intentionally short-lived and removed after validation.
+```text
+🌐 Internet
+   ↓ HTTP :80
+⚖️ ALB
+   ↓ :8080
+⚙️ ECS/Fargate
+   ↓ :5432
+🗄️ RDS PostgreSQL
+```
 
-The retained Phase 03 recovery baseline remains separate from this phase: the migration AMI, its EBS snapshot, and the operational S3 bucket are preserved for later portfolio work.
+The temporary lab used the default VPC in `us-east-1`, an HTTP ALB, ECS/Fargate, ECR, single-AZ RDS PostgreSQL, Secrets Manager, CloudWatch Logs, scoped security groups, and IAM/OIDC roles. It was intentionally short-lived and removed after validation.
 
-## ⚖️ Lab choices vs production direction
-
-| Phase 06 validation lab | Production direction |
-|---|---|
-| HTTP ALB | HTTPS with ACM + DNS |
-| Single-AZ RDS | HA/Multi-AZ according to business RTO/RPO |
-| short-lived default-VPC runtime | dedicated network/environment boundaries |
-| master DB credential for lab continuity | least-privilege application DB principal |
-| one-task validation service | capacity/HA sized to workload requirements |
-
-These are deliberate lab trade-offs, not claims that the temporary topology is the production target.
+> [!WARNING]
+> This was a **validation lab**, not a claim of final production topology. Production direction includes HTTPS/ACM, stronger environment/network boundaries, HA according to RTO/RPO, and least-privilege database identities.
 
 ## 🧹 Cleanup outcome
 
-After validation I removed the temporary Phase 06 ECS service and cluster, ECR repository, ALB/listener/target group, RDS instance and managed secret, CloudWatch log group, task definitions, IAM roles/policies, OIDC provider, DB subnet group, and Phase 06 security groups. The default VPC/subnets were intentionally preserved because they are account defaults and do not incur charges simply by existing.
+| Resource family | Final state |
+|---|---:|
+| ECS service / cluster | 🗑️ **DELETED** |
+| ECR repository | 🗑️ **DELETED** |
+| ALB / listener / target group | 🗑️ **DELETED** |
+| Phase 06 RDS + managed secret | 🗑️ **DELETED** |
+| Phase 06 IAM / OIDC | 🗑️ **DELETED** |
+| Phase 06 security groups | 🗑️ **DELETED** |
+| Default VPC + default subnets | 🟡 **KEPT** |
+| Phase 03 AMI / snapshot / S3 | 🟡 **KEPT** |
 
 ## 🗺️ Repository map
 
 | Path | Purpose |
 |---|---|
-| `.github/workflows/` | Production CI/CD and controlled rollback workflows |
-| `app/` | Flask workload, Docker build and automated tests |
-| `docs/` | Architecture, security controls and implementation record |
-| `decisions/` | Architecture Decision Records |
-| `runbooks/` | **Rebuild, rollback and cleanup operator procedures** |
-| `checklists/` | Preflight and execution guardrails |
-| `evidence/` | Screenshots and evidence index |
-| `CURRENT-STATE.md` | Final authoritative status |
+| `.github/workflows/` | 🚀 CI/CD + controlled rollback |
+| `app/` | 🐍 Flask workload + Docker + tests |
+| `docs/` | 📚 Architecture + security implementation record |
+| `decisions/` | 🧠 Architecture Decision Records |
+| `runbooks/` | 🛠️ Rebuild + ↩️ rollback + 🧹 cleanup |
+| `checklists/` | ✅ Preflight + execution guardrails |
+| `evidence/` | 📸 Screenshots + evidence index |
+| `CURRENT-STATE.md` | 📍 Authoritative final status |
 
 ## 🧠 Evidence standard
 
-> **PLANNED** = design only · **IMPLEMENTED** = code/configuration exists · **VALIDATED** = observed execution proves the behavior.
+> 🟣 **PLANNED** = design only  
+> 🔵 **IMPLEMENTED** = code/configuration exists  
+> 🟢 **VALIDATED** = observed execution proves the behavior
 
-Phase 06 is closed only because the delivery path, security gates, failure behavior, recovery path, and cleanup were all observed and documented.
+---
+
+<p align="center"><strong>🚀 Build safely · 🔐 prove the gates · 🚨 test failure · ↩️ recover · 🧹 clean up</strong></p>
