@@ -1,43 +1,72 @@
 # ▶️ Phase 06 — Reproducible Execution Runbook
 
-![Runbook](https://img.shields.io/badge/Runbook-REBUILD%20FROM%20ZERO-7c3aed?style=for-the-badge)
-![Validated](https://img.shields.io/badge/Phase%2006-VALIDATED-16a34a?style=for-the-badge)
+<p align="center">
+<img src="https://img.shields.io/badge/RUNBOOK-REBUILD%20FROM%20ZERO-7C3AED?style=for-the-badge" />
+<img src="https://img.shields.io/badge/PHASE%2006-VALIDATED-16A34A?style=for-the-badge" />
+<img src="https://img.shields.io/badge/AWS-us--east--1-FF9900?style=for-the-badge" />
+</p>
 
-> **Purpose:** this is the operator/rebuild guide for Phase 06. The README tells the portfolio story; this file records how I can reproduce the delivery system without relying on chat history.
+> [!NOTE]
+> **Purpose:** this is my operator/rebuild guide. The README tells the portfolio story; this file records how I can reproduce Phase 06 without relying on chat history.
 
-## 🧭 Mental model
+## 🧭 Operator map
 
-```text
-Source change
-  ↓
-Pull Request
-  ↓
-Gitleaks → pytest → pip-audit → Docker → Trivy
-  ↓
-Merge to protected main
-  ↓
-GitHub OIDC → temporary AWS credentials
-  ↓
-ECR image tagged with Git SHA
-  ↓
-new ECS task-definition revision
-  ↓
-ECS service deployment
-  ↓
-/api/health + /api/ready
-  ↓
-release accepted OR rollback
+| Step | Milestone | Exit signal |
+|---:|---|---|
+| 0️⃣ | 🧰 Preflight | identity + region + tools verified |
+| 1️⃣ | 🐍 App baseline | tests pass; health/readiness behavior understood |
+| 2️⃣ | 🛡️ DevSecOps gates | Gitleaks + pytest + pip-audit + Trivy green |
+| 3️⃣ | 🔑 OIDC | GitHub gets short-lived AWS credentials |
+| 4️⃣ | 📦 ECR | immutable Git-SHA image path ready |
+| 5️⃣ | 🌐 Network | ALB → ECS → RDS boundaries established |
+| 6️⃣ | 🗄️ PostgreSQL | 10 / 50 / 150 rows restored and DB relocked |
+| 7️⃣ | ⚙️ ECS/Fargate | task runtime + logs + secret injection ready |
+| 8️⃣ | ⚖️ ALB + Service | live workload reachable |
+| 9️⃣ | 🚀 Automated deploy | push to `main` deploys + validates |
+| 🔟 | 🚨 Failure drill | bad release rejected |
+| 1️⃣1️⃣ | 📸 Evidence | meaningful proof recorded |
+| 1️⃣2️⃣ | 🧹 Cleanup | temporary runtime removed + audited |
+
+## 🌈 End-to-end mental model
+
+```mermaid
+flowchart TD
+    A[👨‍💻 Source change] --> B[🔀 Pull Request]
+    B --> C[🛡️ Security + quality gates]
+    C --> D[🔑 GitHub OIDC]
+    D --> E[📦 ECR · Git SHA]
+    E --> F[⚙️ ECS task revision]
+    F --> G[🚀 ECS service deployment]
+    G --> H{🚦 health + ready}
+    H -->|PASS| I[🟢 Release accepted]
+    H -->|FAIL| J[🔴 Release rejected]
+    J --> K[↩️ Rollback]
+    K --> H
+
+    classDef source fill:#dbeafe,stroke:#2563eb,color:#111827;
+    classDef gate fill:#fef3c7,stroke:#d97706,color:#111827;
+    classDef aws fill:#ffedd5,stroke:#ea580c,color:#111827;
+    classDef good fill:#dcfce7,stroke:#16a34a,color:#111827;
+    classDef bad fill:#fee2e2,stroke:#dc2626,color:#111827;
+    class A,B source;
+    class C gate;
+    class D,E,F,G,H aws;
+    class I,K good;
+    class J bad;
 ```
 
-## ⚠️ Safety / cost boundary
+## 💰 Safety / cost boundary
 
-The AWS runtime in this phase is intentionally temporary. Before rebuilding it, confirm the account/region, current billing/credits and the cleanup plan. Never paste AWS passwords, database passwords, access keys or tokens into this repository. The workflow authenticates to AWS through OIDC; no long-lived AWS access keys are required.
+> [!WARNING]
+> The AWS runtime is intentionally temporary. Before rebuilding: verify account, region, credits/billing and the cleanup plan. **Never** paste AWS passwords, database passwords, access keys or tokens into the repository.
 
-The values below document the **validated Phase 06 lab**. Deleted resources must be recreated and their new IDs/DNS names substituted where appropriate.
+The validated lab used account `197821101770` in `us-east-1`. Deleted resource IDs must be replaced with newly created values when rebuilding.
 
-## 0 — Prerequisites
+---
 
-**Goal:** prove the workstation and account context before changing anything.
+## 0️⃣ 🧰 Preflight
+
+🎯 **Goal:** prove workstation and AWS context before changing anything.
 
 ```powershell
 aws sts get-caller-identity
@@ -46,9 +75,8 @@ git --version
 docker --version
 ```
 
-Expected account for the validated lab was `197821101770`, region `us-east-1`. `aws sts get-caller-identity` proves which AWS identity is active; the remaining commands prove Git/Docker are available.
-
-Repository:
+🧠 **Why:** most dangerous mistakes start with the wrong account/region or an assumed local dependency.  
+✅ **Expected:** correct AWS identity, `us-east-1`, Git available, Docker available.
 
 ```powershell
 git clone https://github.com/EngMohammedBashir/MADAR-cicd-devsecops.git
@@ -56,18 +84,16 @@ cd MADAR-cicd-devsecops
 git checkout -b feature/<short-purpose>
 ```
 
-**Why a feature branch?** `main` is protected. Changes should reach it through a PR and required CI rather than direct pushes.
+🔀 **Why a feature branch?** `main` is protected; changes reach it through a PR and required CI.
 
 ---
 
-## 1 — Application baseline and local container proof
+## 1️⃣ 🐍 Application baseline + local container proof
 
-The workload lives in `app/`. Its two operational signals intentionally mean different things:
-
-- `/api/health` = Flask process is alive.
-- `/api/ready` = Flask can reach PostgreSQL.
-
-Run tests:
+| Endpoint | Meaning | Expected without DB |
+|---|---|---:|
+| ❤️ `/api/health` | Flask process alive | 🟢 `200` |
+| 💚 `/api/ready` | PostgreSQL reachable | 🔴 `503` |
 
 ```powershell
 cd app
@@ -78,8 +104,6 @@ python -m pytest -q
 cd ..
 ```
 
-Build and start the image:
-
 ```powershell
 docker build -t madar-phase06-local ./app
 docker run -d --name madar-p06-local -p 8080:8080 -e MADAR_DB_PASSWORD=dummy-local-only madar-phase06-local
@@ -88,24 +112,27 @@ curl.exe -i http://localhost:8080/api/ready
 docker rm -f madar-p06-local
 ```
 
-Expected without a real database: health is `200`; readiness is `503`. That is a **correct** result, not a failure of the health model.
+> [!TIP]
+> `health=200` + `ready=503` without a real DB is **correct behavior**. It proves liveness and readiness are independent.
 
 ---
 
-## 2 — CI / DevSecOps gates
-
-The authoritative implementation is `.github/workflows/ci.yml`. On PRs it performs:
+## 2️⃣ 🛡️ CI / DevSecOps gates
 
 ```text
-checkout full history
-→ Gitleaks
-→ Python 3.12
-→ pytest
-→ pip-audit
-→ Docker build
-→ Trivy HIGH/CRITICAL scan
-→ temporary container
-→ /api/health
+🔀 checkout full history
+   ↓
+🔐 Gitleaks
+   ↓
+🧪 pytest
+   ↓
+🛡️ pip-audit
+   ↓
+🐳 Docker build
+   ↓
+🔎 Trivy HIGH / CRITICAL
+   ↓
+❤️ temporary-container health check
 ```
 
 Useful local equivalents:
@@ -118,50 +145,48 @@ cd ..
 docker build -t madar-phase06-ci:local ./app
 ```
 
-Gitleaks and Trivy are enforced authoritatively by GitHub Actions. The controlled Gitleaks negative test used a **synthetic** secret in an unmerged PR and proved the gate fails unsafe changes; never use a real credential as a test fixture.
+| Gate | Protects |
+|---|---|
+| 🔐 Gitleaks | secrets in Git history |
+| 🧪 pytest | application behavior |
+| 🛡️ pip-audit | vulnerable Python dependencies |
+| 🔎 Trivy | vulnerable built image |
 
-### Branch protection exit condition
+🚨 The Gitleaks negative test used a **synthetic** secret in an unmerged PR. Never use a real credential as a test fixture.
 
-Before merging, the PR must show the required CI job green. The validated `main` ruleset required a PR, blocked force pushes/deletion and required the actual CI status check.
+✅ **Exit:** required CI check is green before merge; protected `main` blocks unsafe direct flow.
 
 ---
 
-## 3 — GitHub OIDC → AWS
+## 3️⃣ 🔑 GitHub OIDC → AWS
 
-**Goal:** let GitHub Actions obtain short-lived AWS credentials without repository access keys.
-
-Validated provider:
+🎯 **Goal:** short-lived AWS credentials with **no stored AWS access keys**.
 
 ```text
-Provider URL: https://token.actions.githubusercontent.com
-Audience:     sts.amazonaws.com
+Provider URL  https://token.actions.githubusercontent.com
+Audience      sts.amazonaws.com
+Role          MADAR-Phase06-GitHubActionsRole
 ```
 
-Validated role:
-
-```text
-MADAR-Phase06-GitHubActionsRole
-```
-
-The current GitHub immutable subject used by the validated trust relationship was:
+Validated immutable subject:
 
 ```text
 repo:EngMohammedBashir@210871383/MADAR-cicd-devsecops@1356428590:ref:refs/heads/main
 ```
 
-**Important lesson:** the initial generic subject assumption did not match the subject GitHub emitted for this repository. The trust policy was corrected to the observed immutable owner/repository-ID form above.
+> [!IMPORTANT]
+> The initial generic subject assumption did not match GitHub's emitted subject. The trust policy was corrected to the observed immutable owner/repository-ID form.
 
-The role needs only the delivery permissions required by the pipeline:
+Least-privilege delivery permissions:
 
 ```text
-ECR authorization token
-ECR layer/image push actions → madar-phase06 only
-ECS Register/DescribeTaskDefinition
-ECS Update/DescribeService → madar-p06-service only
-iam:PassRole → MADAR-Phase06-ECSTaskExecutionRole only
+📦 ECR authorization + scoped push actions → madar-phase06
+⚙️ ECS Register/DescribeTaskDefinition
+🚀 ECS Update/DescribeService → madar-p06-service only
+🔐 iam:PassRole → MADAR-Phase06-ECSTaskExecutionRole only
 ```
 
-The workflow then uses:
+Workflow permission contract:
 
 ```yaml
 permissions:
@@ -169,109 +194,87 @@ permissions:
   id-token: write
 ```
 
-and `aws-actions/configure-aws-credentials` with the GitHub Actions role in `us-east-1`.
-
 ---
 
-## 4 — ECR immutable image registry
-
-**Goal:** every deployed image must map back to one Git commit.
+## 4️⃣ 📦 Immutable ECR registry
 
 ```powershell
 aws ecr create-repository --repository-name madar-phase06 --image-tag-mutability IMMUTABLE --image-scanning-configuration scanOnPush=true --encryption-configuration encryptionType=AES256 --region us-east-1
 ```
 
-Why: `IMMUTABLE` prevents silently replacing an existing SHA tag; scan-on-push adds registry-side scanning; the CI workflow also runs Trivy before publication.
-
-The workflow uses `${{ github.sha }}` as the image tag, so the traceability chain is:
-
-```text
-Git commit SHA ↔ ECR tag ↔ ECS task-definition revision
-```
+🎯 **What:** creates encrypted ECR with immutable tags and scan-on-push.  
+🧠 **Why:** an existing SHA tag cannot be silently replaced.  
+🔗 **Traceability:** `Git commit SHA ↔ ECR tag ↔ ECS task-definition revision`.
 
 ---
 
-## 5 — Minimum validation network
+## 5️⃣ 🌐 Minimum validation network
 
-The validated lab reused the **default VPC** to avoid creating unnecessary network infrastructure.
-
-Validated subnets:
+The lab reused the **default VPC** to avoid unnecessary infrastructure.
 
 ```text
 us-east-1a  subnet-04e63af31360b080a
 us-east-1b  subnet-0d70c1cf55218c14f
 ```
 
-Create three security boundaries, not one shared SG:
+```mermaid
+flowchart LR
+    A[🌍 Internet] -->|TCP 80| B[⚖️ ALB SG]
+    B -->|TCP 8080| C[⚙️ ECS SG]
+    C -->|TCP 5432| D[🗄️ RDS SG]
 
-```text
-Internet :80 → ALB SG
-ALB SG :8080 → ECS SG
-ECS SG :5432 → RDS SG
+    classDef public fill:#dbeafe,stroke:#2563eb,color:#111827;
+    classDef app fill:#ffedd5,stroke:#ea580c,color:#111827;
+    classDef db fill:#dcfce7,stroke:#16a34a,color:#111827;
+    class A,B public;
+    class C app;
+    class D db;
 ```
 
-Validated names:
+> [!CAUTION]
+> Do **not** open ECS `8080` or PostgreSQL `5432` directly to the internet.
 
-```text
-madar-p06-alb-sg
-madar-p06-ecs-sg
-madar-p06-rds-sg
-```
-
-**Why:** each hop expresses exactly who may initiate traffic to the next layer. Do not open ECS `8080` or PostgreSQL `5432` directly to the internet.
+Validated SG names: `madar-p06-alb-sg`, `madar-p06-ecs-sg`, `madar-p06-rds-sg`.
 
 ---
 
-## 6 — PostgreSQL restore and relock
+## 6️⃣ 🗄️ PostgreSQL restore + relock
 
-Validated database design:
+| Setting | Validated lab value |
+|---|---|
+| Identifier | `madar-p06-postgres` |
+| Engine | PostgreSQL |
+| Class | `db.t4g.micro` |
+| Storage | `20 GiB gp3` |
+| Database | `madar_legacy` |
+| Topology | Single-AZ lab |
+| Backups | 0-day retention for disposable lab |
 
-```text
-Identifier       madar-p06-postgres
-Engine           PostgreSQL
-Class            db.t4g.micro
-Storage          20 GiB gp3
-Database         madar_legacy
-Username         postgres
-Topology         Single-AZ lab
-Backups          0-day retention for short-lived lab
-Deletion protect disabled
-```
-
-The authoritative retained dump is:
+Authoritative retained dump:
 
 ```text
 s3://madar-operational-files-197821101770/database-backups/madar_legacy_final.dump
 ```
 
-Expected restored business counts:
+Expected reconciliation:
 
-```text
-customers          10
-shipments          50
-shipment_events   150
-```
+| Table | Rows |
+|---|---:|
+| customers | 🟢 **10** |
+| shipments | 🟢 **50** |
+| shipment_events | 🟢 **150** |
 
-For the validated restore, RDS was made public **temporarily**, PostgreSQL `5432` was restricted to the operator's single public `/32`, the dump was restored with a PostgreSQL 18 client, counts were reconciled, then the temporary ingress was revoked and `PubliclyAccessible` returned to `False`.
+For the validated restore, RDS was temporarily public with `5432` restricted to the operator's single `/32`; after restore and reconciliation the temporary ingress was revoked and `PubliclyAccessible=False` restored.
 
-Never commit the RDS-managed master password. Retrieve it at execution time from the RDS-managed Secrets Manager secret and keep it out of shell history/screenshots.
+> [!WARNING]
+> Never commit or screenshot the RDS-managed master password. Retrieve it at execution time and keep it out of shell history.
 
-Exit condition:
-
-```text
-RDS available
-PubliclyAccessible = False
-5432 source = ECS SG only
-10 / 50 / 150 rows reconciled
-```
-
-📸 Evidence: [`../evidence/phase06-database-restore-and-relock.png`](../evidence/phase06-database-restore-and-relock.png)
+✅ **Exit:** RDS available · public access false · `5432` source ECS SG only · `10/50/150` reconciled.  
+📸 [`database restore + relock`](../evidence/phase06-database-restore-and-relock.png)
 
 ---
 
-## 7 — ECS/Fargate runtime
-
-Create the cluster and short-retention log group:
+## 7️⃣ ⚙️ ECS/Fargate runtime
 
 ```powershell
 aws ecs create-cluster --cluster-name madar-p06-cluster --region us-east-1
@@ -279,43 +282,29 @@ aws logs create-log-group --log-group-name /ecs/madar-p06 --region us-east-1
 aws logs put-retention-policy --log-group-name /ecs/madar-p06 --retention-in-days 1 --region us-east-1
 ```
 
-Validated task-definition contract:
+| Task contract | Value |
+|---|---|
+| family | `madar-p06-app` |
+| launch | `FARGATE` |
+| network | `awsvpc` |
+| CPU / memory | `256 / 512` |
+| container | `madar-app` |
+| port | `8080` |
+| logs | `/ecs/madar-p06` |
+| DB password | Secrets Manager reference |
+| execution role | `MADAR-Phase06-ECSTaskExecutionRole` |
 
-```text
-family              madar-p06-app
-launch type          FARGATE
-network mode         awsvpc
-cpu / memory         256 / 512
-container            madar-app
-container port       8080
-logs                 /ecs/madar-p06
-DB password          Secrets Manager reference
-execution role       MADAR-Phase06-ECSTaskExecutionRole
-```
-
-The execution role uses `AmazonECSTaskExecutionRolePolicy` plus `secretsmanager:GetSecretValue` scoped to the RDS-managed secret. There was no general application Task Role in the validated Phase 06 runtime.
+🔐 The execution role used `AmazonECSTaskExecutionRolePolicy` plus secret-read permission scoped to the RDS-managed secret. No general application Task Role was used in the validated runtime.
 
 ---
 
-## 8 — ALB + target group + ECS service
-
-Validated load-balancing contract:
+## 8️⃣ ⚖️ ALB + Target Group + ECS Service
 
 ```text
-ALB             madar-p06-alb
-Listener        HTTP :80
-Target group    madar-p06-tg
-Target type     ip
-Target port     8080
-Health path     /api/health
-Service         madar-p06-service
-Desired count   1
-Launch type     FARGATE
+⚖️ ALB          madar-p06-alb · HTTP :80
+🎯 Target Group  madar-p06-tg · ip · :8080 · /api/health
+⚙️ Service       madar-p06-service · FARGATE · desired 1
 ```
-
-This was a short-lived HTTP lab. HTTPS/ACM was not claimed.
-
-After creating the service, wait for stability:
 
 ```powershell
 aws ecs wait services-stable --cluster madar-p06-cluster --services madar-p06-service --region us-east-1
@@ -328,114 +317,109 @@ curl.exe http://<NEW-ALB-DNS>/api/health
 curl.exe http://<NEW-ALB-DNS>/api/ready
 ```
 
-Expected healthy runtime:
+| Gate | Required |
+|---|---:|
+| ❤️ health | 🟢 HTTP 200 |
+| 💚 ready | 🟢 HTTP 200 + database connected |
+
+> [!NOTE]
+> This was a short-lived **HTTP** validation lab. HTTPS/ACM was not claimed.
+
+---
+
+## 9️⃣ 🚀 Automated deployment from `main`
 
 ```text
-/api/health  → HTTP 200
-/api/ready   → HTTP 200 + database connected
+🔑 OIDC credentials
+ → 📦 ECR login
+ → 🏷️ tag/push github.sha
+ → 🧾 describe current task definition
+ → 🐳 replace container image
+ → 🆕 register revision
+ → ⚙️ update ECS service
+ → ⏳ wait stable
+ → ❤️ health
+ → 💚 readiness
 ```
+
+The workflow copies the current task definition, removes AWS read-only fields with `jq`, changes the immutable image identity, registers a new revision, updates the service, and accepts the release only when both operational endpoints pass.
+
+📸 [`automated deployment`](../evidence/phase06-automated-ecs-deployment-success.png)
 
 ---
 
-## 9 — Automated deployment from `main`
-
-The source of truth is `.github/workflows/ci.yml`. On a successful **push to main**, the workflow continues after CI:
+## 🔟 🚨 Controlled failed release + rollback
 
 ```text
-OIDC credentials
-→ ECR login
-→ tag/push image with github.sha
-→ describe current task definition
-→ replace only container image
-→ register new task revision
-→ update ECS service
-→ wait stable
-→ health check
-→ readiness check
+🟢 known-good :3
+      ↓
+🔴 bad :4 · MADAR_DB_HOST=controlled-failure.invalid
+      ↓
+❤️ health 200
+💔 ready 503
+      ↓
+🚨 gate rejects release
+      ↓
+↩️ rollback :4 → :3
+      ↓
+💚 ready 200 · database connected
 ```
 
-The workflow intentionally copies the existing task definition and removes AWS read-only fields with `jq` before registering the next revision. This keeps runtime configuration stable while changing the immutable image identity.
-
-A successful deployment is accepted only after both endpoints pass.
-
-📸 Evidence: [`../evidence/phase06-automated-ecs-deployment-success.png`](../evidence/phase06-automated-ecs-deployment-success.png)
+Use `.github/workflows/controlled-rollback.yml`; do not invent a production outage. Full procedure: [`90-rollback-runbook.md`](90-rollback-runbook.md).
 
 ---
 
-## 10 — Controlled failed release and rollback
+## 1️⃣1️⃣ 📸 Evidence closeout
 
-Do not invent a production outage. Use the repository's manual workflow `.github/workflows/controlled-rollback.yml`.
+Capture only meaningful gates: required CI/security, OIDC/ECR traceability, automated deployment, restored live data, controlled failure/rollback, and final cleanup. Index: [`../evidence/README.md`](../evidence/README.md).
 
-The validated test:
+---
+
+## 1️⃣2️⃣ 🧹 Cleanup
+
+Follow [`99-cleanup-runbook.md`](99-cleanup-runbook.md) in dependency-safe order.
+
+### 🟡 KEEP — continuity assets
 
 ```text
-known-good task definition :3
-        ↓
-register controlled bad revision :4
-MADAR_DB_HOST = controlled-failure.invalid
-        ↓
-health = PASS
-readiness = HTTP 503 (EXPECTED)
-        ↓
-release gate detects failure
-        ↓
-service rolled back to :3
-        ↓
-health = PASS
-readiness = PASS / database connected
+💿 AMI       ami-0cbd2e9ec0d6f9168
+📸 Snapshot  snap-0920a020c47fb6447
+🪣 S3        madar-operational-files-197821101770
+🌐 Default VPC + default subnets
 ```
 
-This proves why liveness alone is not a safe deployment gate.
+### 🔴 DELETE — temporary Phase 06 runtime
 
-Full recovery procedure: [`90-rollback-runbook.md`](90-rollback-runbook.md).
-
----
-
-## 11 — Evidence and closeout
-
-Capture evidence only at meaningful gates: required CI/security gate, OIDC/ECR traceability, automated deployment, restored live data, controlled failure/rollback and final cleanup. The evidence index is `../evidence/README.md`.
+ECS/ECR · ALB chain · RDS · logs · Phase 06 IAM/OIDC · DB subnet group · Phase 06 SGs.
 
 ---
 
-## 12 — Cleanup
+## 🧯 Troubleshooting from the real build
 
-Cleanup is part of Definition of Done, not an optional afterthought. Follow [`99-cleanup-runbook.md`](99-cleanup-runbook.md) in dependency-safe order and finish with a residual audit.
-
-Do **not** delete these Phase 03 continuity assets:
-
-```text
-AMI       ami-0cbd2e9ec0d6f9168
-Snapshot  snap-0920a020c47fb6447
-S3        madar-operational-files-197821101770
-Default VPC and default subnets
-```
-
----
-
-## 🧯 Troubleshooting notes from the real build
-
-| Symptom | What it meant | Resolution |
+| 🚨 Symptom | 🧠 Meaning | 🛠️ Resolution |
 |---|---|---|
-| GitHub OIDC could not assume role | Trust `sub` did not match GitHub's actual immutable subject | Trust exact repository/owner ID subject used by the run |
-| Health works but readiness fails | App process is alive but PostgreSQL dependency is unavailable | Treat readiness as release failure; inspect DB/network/secret |
-| RDS restore needs temporary reachability | Local restore client cannot reach private-only RDS | Temporary `/32` ingress/public accessibility, restore, then immediately revoke/relock |
-| SG deletion returns dependency violation | AWS-managed ENI/reference has not been released yet | Verify ENIs/SG references, wait for dependency release, retry; never force-delete unrelated networking |
-| GitHub Actions Node runtime warning | Action targets older Node runtime while GitHub migrates runner runtime | Warning only when job remains successful; update pinned action versions when appropriate |
+| OIDC cannot assume role | trust `sub` mismatch | use exact observed immutable repo/owner-ID subject |
+| health works, readiness fails | process alive; PostgreSQL unavailable | inspect DB/network/secret; reject release |
+| local RDS restore cannot connect | private-only DB unreachable locally | temporary `/32` path → restore → immediately relock |
+| SG `DependencyViolation` | ENI/reference not released | inspect dependency, wait, retry |
+| Actions Node runtime warning | runner/action runtime migration warning | if job succeeds, warning only; update pinned actions when appropriate |
 
 ## 🏁 Definition of Done
 
-Phase 06 is reproducible/closed when all of these are true:
+| Requirement | State |
+|---|---:|
+| PR security/quality gates pass | 🟢 |
+| synthetic secret is blocked | 🟢 |
+| GitHub uses OIDC, not stored AWS keys | 🟢 |
+| ECR image immutable + Git-SHA traceable | 🟢 |
+| ECS deploy automated from `main` | 🟢 |
+| health + readiness pass | 🟢 |
+| controlled bad release rejected | 🟢 |
+| rollback restores readiness | 🟢 |
+| temporary AWS runtime deleted | 🟢 |
+| residual audit clean | 🟢 |
+| Phase 03 continuity assets intact | 🟡 **KEEP** |
 
-```text
-✅ PR security/quality gates pass
-✅ synthetic secret negative test is blocked
-✅ GitHub uses OIDC, not stored AWS keys
-✅ ECR image is immutable and Git-SHA traceable
-✅ ECS deploy is automated from main
-✅ /api/health and /api/ready pass after deployment
-✅ controlled bad release is rejected
-✅ rollback restores readiness
-✅ temporary AWS runtime is deleted
-✅ residual audit is clean
-✅ retained Phase 03 assets remain intact
-```
+---
+
+<p align="center"><strong>🧰 Verify → 🛡️ Gate → 🔑 Authenticate → 📦 Publish → ⚙️ Deploy → 🚦 Validate → ↩️ Recover → 🧹 Clean</strong></p>
